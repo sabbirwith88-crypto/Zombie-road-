@@ -7,7 +7,7 @@
     <style>
         *{margin:0;padding:0;box-sizing:border-box;touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none}
         body{overflow:hidden;background-color:#222;font-family:Arial, sans-serif;position:fixed;width:100%;height:100%}
-        #gameContainer{position:relative;width:100%;height:100%;overflow:hidden}
+        #gameContainer{position:relative;width:100%;height:100%;overflow:hidden;padding-bottom: 60px;}
         #gameCanvas{background-color:#4a6b7c;display:block;width:100%;height:100%}
         #startScreen,#gameOverScreen,#settingsScreen,#adjustControlsScreen,#codeGenerationScreen,#networkErrorScreen{
             position:absolute;top:0;left:0;width:100%;height:100%;
@@ -15,7 +15,6 @@
             color:#fff;z-index:30;text-align:center;padding:20px}
         #gameOverScreen,#settingsScreen,#adjustControlsScreen,#codeGenerationScreen,#networkErrorScreen{display:none}
         
-        /* Network Error Screen Specific Styles */
         #networkErrorScreen {
             background: linear-gradient(135deg, #c0392b 0%, #e74c3c 100%);
             z-index: 100;
@@ -90,7 +89,7 @@
             position:absolute;top:15px;background:rgba(0,0,0,.7);color:#fff;padding:8px 12px;border-radius:20px;font-size:16px;font-weight:bold;z-index:5}
         #totalScoreDisplay{left:15px; background:rgba(241,196,15,0.9); color:#2c3e50; border:2px solid #f39c12}
         #distanceDisplay{right:15px; background:rgba(52, 152, 219, 0.9); color:white; border:2px solid #2980b9}
-        #soundToggleBtn{right:15px; top:60px; border:none; cursor:pointer; font-size:20px; background:rgba(0,0,0,.7); width:40px; height:40px; display:flex; justify-content:center; align-items:center}
+        #soundToggleBtn{right:15px; top:60px; border:none; cursor:pointer; font-size:20px; background:rgba(0,0,0,.7); width:40px;height:40px;display:flex;justify-content:center;align-items:center}
         #backToStartBtn{
             position:absolute;top:60px;left:15px;background:rgba(0,0,0,.7);color:#fff;border:none;padding:8px;font-size:20px;border-radius:50%;
             cursor:pointer;font-weight:bold;box-shadow:0 2px 0 #444;transition:all .1s;z-index:5;display:none;width:40px;height:40px;display:flex;justify-content:center;align-items:center}
@@ -119,7 +118,6 @@
             background: #1abc9c;
             box-shadow: 0 4px 0 #16a085;
         }
-        /* Adjust Controls Screen */
         #adjustControlsScreen {
             z-index: 15;
             background-color: rgba(0,0,0,0.9);
@@ -139,12 +137,10 @@
             width: 100%;
             max-width: 300px;
         }
-        /* Control symbols */
         .control-symbol {
             font-size: 28px;
             pointer-events: none;
         }
-        /* Gamepad symbols */
         .gamepad-symbol {
             width: 40px;
             height: 40px;
@@ -185,7 +181,6 @@
             border-left: 15px solid white;
             right: 8px;
         }
-        /* Control size slider */
         .control-size-slider {
             width: 100%;
             max-width: 300px;
@@ -195,13 +190,11 @@
             color: #ddd;
             margin-bottom: 8px;
         }
-        /* Button images */
         .btn-image {
             width: 24px;
             height: 24px;
             object-fit: contain;
         }
-        /* Health bar */
         #healthBar {
             position: absolute;
             top: 60px;
@@ -219,7 +212,6 @@
             background: linear-gradient(90deg, #e74c3c, #2ecc71);
             transition: width 0.3s;
         }
-        /* Speed indicator */
         #speedIndicator {
             position: absolute;
             top: 60px;
@@ -232,7 +224,6 @@
             font-weight: bold;
             z-index: 5;
         }
-        /* Code Generation Screen */
         #codeGenerationScreen {
             z-index: 20;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -271,7 +262,6 @@
             margin-top: 10px;
             font-size: 0.9rem;
         }
-        /* Total score progress */
         .total-score-progress {
             position: absolute;
             top: 60px;
@@ -289,7 +279,6 @@
             background: linear-gradient(90deg, #f1c40f, #e67e22);
             transition: width 0.3s;
         }
-        /* Game Over Screen */
         #finalTotalScore {
             color: #f1c40f;
             font-size: 2rem;
@@ -299,15 +288,13 @@
             color: #3498db;
             font-size: 1.5rem;
         }
-        /* Distance number only style */
         .distance-number {
             font-size: 1.2rem;
             font-weight: bold;
         }
-        /* Network Status Indicator */
         #networkStatus {
             position: absolute;
-            bottom: 15px;
+            bottom: 70px;
             left: 15px;
             background: rgba(0,0,0,0.7);
             color: #2ecc71;
@@ -332,7 +319,55 @@
         #networkStatus.offline .network-dot {
             background: #e74c3c;
         }
-        /* Touch */
+        #bannerAdContainer {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 60px;
+            background: rgba(0,0,0,0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 40;
+            border-top: 2px solid #f1c40f;
+            overflow: hidden;
+        }
+        #bannerAdContainer iframe {
+            max-width: 100%;
+            height: 50px;
+            border: none;
+        }
+        #adLoadingOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            flex-direction: column;
+        }
+        .ad-loader {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #f1c40f;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .ad-text {
+            color: #f1c40f;
+            font-size: 1.2rem;
+        }
         @media (hover:none){
             .btn{padding:15px 30px;font-size:18px}
             .toggle-btn{padding:12px 25px;font-size:16px}
@@ -347,17 +382,26 @@
             #healthBar, #speedIndicator, .total-score-progress {top: 80px;}
             #totalScoreDisplay{top: 15px;}
         }
-        /* PC */
         @media (min-width:768px){
             #gameContainer{max-width:500px;max-height:800px;margin:0 auto;border:2px solid #444;border-radius:10px;overflow:hidden;position:relative;top:50%;transform:translateY(-50%)}
         }
     </style>
 
-    <!-- AdMob App ID inserted by assistant -->
+    <!-- AdMob App ID -->
     <meta name="com.google.android.gms.ads.APPLICATION_ID" content="ca-app-pub-4830984031121626~6402765319">
+    
+    <!-- AdsGram SDK -->
+    <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
+    
+    <!-- AdsTerra Banner Ad Script -->
     <script>
-        window.ADMOB_APP_ID = "ca-app-pub-4830984031121626~6402765319";
-        console.log("AdMob App ID set:", window.ADMOB_APP_ID);
+        atOptions = {
+            'key' : '5e8a11afc5a21105472404c0f57aadc9',
+            'format' : 'iframe',
+            'height' : 50,
+            'width' : 320,
+            'params' : {}
+        };
     </script>
 </head>
 <body>
@@ -374,7 +418,6 @@
     <div id="healthBar"><div id="healthFill"></div></div>
     <div id="speedIndicator">⚡ <span id="speedValue">0</span></div>
     
-    <!-- Network Status Indicator -->
     <div id="networkStatus">
         <span class="network-dot"></span>
         <span id="networkStatusText">Online</span>
@@ -386,6 +429,11 @@
     <button id="soundToggleBtn" title="Mute/Unmute" class="small-btn">
         <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0id2hpdGUiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCI+PHBhdGggZD0iTTMgOXY2aDRsNSA1VjRMNyA5SDN6bTEzLjUgM2MwLTEuNzctMS4wMi0zLjI5LTIuNS00LjAzdjguMDUgYzEuNDgtLjczIDIuNS0yLjI1IDIuNS00LjAyek0xNCAzLjIzdjIuMDZjMi44OS44NiA1IDMuNTQgNSA2Ljcxcy0yLjExIDUuODUtNSA2LjcxdjIuMDZjNC4wMS0uOTEgNy00LjQ5IDctOC43N3MtMi45OS03Ljg2LTctOC43N3oiLz48L3N2Zz4=" class="btn-image" alt="Sound">
     </button>
+
+    <div id="adLoadingOverlay">
+        <div class="ad-loader"></div>
+        <div class="ad-text">Loading Advertisement...</div>
+    </div>
 
     <div id="startScreen">
         <h1>🧟 Zombie Apocalypse Driving</h1>
@@ -400,38 +448,29 @@
 
     <div id="settingsScreen">
         <h1>⚙️ Game Settings</h1>
-
         <div class="settings-header">Control Customization</div>
         <div class="settings-hint">You can reposition the control buttons anywhere on the screen. Drag them to your preferred position.</div>
         <button class="btn btn-controls" id="adjustControlsBtn">🎮 Adjust Controls</button>
-
         <div class="settings-header">Sound Settings</div>
         <div class="settings-row">
             <span>Vibration:</span>
             <button class="toggle-btn active" id="vibrateOnBtn">ON</button>
             <button class="toggle-btn" id="vibrateOffBtn">OFF</button>
         </div>
-
         <div class="settings-row">
             <span>Sound (SFX):</span>
             <button class="toggle-btn active" id="soundOnBtn">ON</button>
             <button class="toggle-btn" id="soundOffBtn">OFF</button>
         </div>
-
         <button class="btn" id="backToMainBtn" style="margin-top: 20px;">🔙 Back to Main Menu</button>
     </div>
 
     <div id="adjustControlsScreen">
         <h1>🎮 Adjust Controls</h1>
         <div class="settings-hint">Drag the control buttons to your preferred positions</div>
-
         <div class="control-size-label">Control Size: <span id="controlSizeValue">100%</span></div>
         <input type="range" min="70" max="130" value="100" class="control-size-slider" id="controlSizeSlider">
-
-        <div class="adjust-controls-grid" id="adjustControlsGrid">
-            <!-- Control buttons will be placed here during adjustment -->
-        </div>
-
+        <div class="adjust-controls-grid" id="adjustControlsGrid"></div>
         <div class="adjust-controls-buttons">
             <button class="btn" id="resetControlsBtn">🔄 Reset to Default</button>
             <button class="btn" id="saveControlsBtn">💾 Save Controls</button>
@@ -460,7 +499,6 @@
         <button class="btn" id="backToMenuBtn">🔙 Back to Menu</button>
     </div>
 
-    <!-- Network Error Screen -->
     <div id="networkErrorScreen">
         <div class="network-error-icon">📡</div>
         <h1 class="network-error-title">Network Error!</h1>
@@ -472,6 +510,10 @@
         <button class="btn" id="networkBackToMenuBtn">🔙 Back to Menu</button>
     </div>
 
+    <div id="bannerAdContainer">
+        <script src="https://www.highperformanceformat.com/5e8a11afc5a21105472404c0f57aadc9/invoke.js"></script>
+    </div>
+
     <div class="control-btn" id="leftBtn">←</div>
     <div class="control-btn" id="rightBtn">→</div>
     <div class="control-btn" id="forwardBtn">↑</div>
@@ -480,12 +522,105 @@
 
 <script>
     /* =======================
-       SOUND SYSTEM (WebAudio)
+       ADS SETUP
+       ======================= */
+    
+    let adsGramAdController = null;
+    let adsGramInitialized = false;
+    let isAdShowing = false;
+    let hasShownInitialAd = false;
+    
+    const adLoadingOverlay = document.getElementById('adLoadingOverlay');
+    
+    function initAdsGram() {
+        return new Promise((resolve, reject) => {
+            try {
+                console.log("Initializing AdsGram...");
+                if (typeof window.Adsgram !== 'undefined' && !adsGramInitialized) {
+                    adsGramAdController = window.Adsgram.init({ 
+                        blockId: "int-24334" 
+                    });
+                    adsGramInitialized = true;
+                    console.log("✅ AdsGram initialized successfully with block ID: int-24334");
+                    resolve(adsGramAdController);
+                } else if (typeof window.Adsgram !== 'undefined' && adsGramInitialized) {
+                    console.log("AdsGram already initialized");
+                    resolve(adsGramAdController);
+                } else {
+                    console.error("❌ AdsGram SDK not loaded yet");
+                    setTimeout(() => {
+                        if (typeof window.Adsgram !== 'undefined') {
+                            adsGramAdController = window.Adsgram.init({ 
+                                blockId: "int-24334" 
+                            });
+                            adsGramInitialized = true;
+                            console.log("✅ AdsGram initialized on retry");
+                            resolve(adsGramAdController);
+                        } else {
+                            reject("AdsGram SDK failed to load");
+                        }
+                    }, 1000);
+                }
+            } catch (error) {
+                console.error("❌ AdsGram initialization error:", error);
+                reject(error);
+            }
+        });
+    }
+
+    async function showAdsGramAd(adType = "interstitial") {
+        if (isAdShowing) {
+            console.log("Ad already showing, skipping...");
+            return false;
+        }
+        
+        try {
+            isAdShowing = true;
+            adLoadingOverlay.style.display = 'flex';
+            
+            console.log(`🎯 Showing AdsGram ${adType} ad...`);
+            
+            if (!adsGramInitialized) {
+                await initAdsGram();
+            }
+            
+            if (adsGramAdController) {
+                setTimeout(() => {
+                    adLoadingOverlay.style.display = 'none';
+                }, 1000);
+                
+                const result = await adsGramAdController.show();
+                console.log("✅ AdsGram ad shown successfully:", result);
+                isAdShowing = false;
+                return true;
+            } else {
+                throw new Error("AdsGram controller not available");
+            }
+        } catch (error) {
+            console.error("❌ AdsGram ad error:", error);
+            adLoadingOverlay.style.display = 'none';
+            isAdShowing = false;
+            return false;
+        }
+    }
+
+    // Show initial ad when game opens (only once)
+    window.addEventListener('load', async () => {
+        console.log("Page loaded, showing initial ad...");
+        setTimeout(async () => {
+            if (!hasShownInitialAd) {
+                await showAdsGramAd("initial");
+                hasShownInitialAd = true;
+            }
+        }, 2000);
+    });
+
+    /* =======================
+       SOUND SYSTEM
        ======================= */
     const Sound = (() => {
         let ctx = null, masterGain, sfxGain;
         let unlocked = false;
-
         let sfxEnabled = true;
         let masterMuted = false;
 
@@ -550,7 +685,6 @@
             return {src, g, lpf, hpf};
         }
 
-        /* Public, event-based sounds */
         function sButton(){ blip({type:'triangle', startFreq:700, endFreq:900, len:0.07, gain:0.2}); }
         function sStart(){
             blip({type:'sawtooth', startFreq:250, endFreq:900, len:0.35, gain:0.25});
@@ -615,7 +749,6 @@
     let wasGameRunning = false;
     let gameStateBeforeNetworkLoss = null;
 
-    // Update network status indicator
     function updateNetworkStatus(online) {
         isOnline = online;
         if (online) {
@@ -627,11 +760,9 @@
         }
     }
 
-    // Handle network loss
     function handleNetworkLoss() {
-        if (!gameRunning && !countdownActive) return; // Only show if game is active
+        if (!gameRunning && !countdownActive) return;
         
-        // Save current game state
         wasGameRunning = gameRunning;
         if (gameRunning) {
             gameStateBeforeNetworkLoss = {
@@ -648,48 +779,38 @@
             };
         }
 
-        // Stop the game
         gameRunning = false;
         countdownActive = false;
 
-        // Hide all other screens
         startScreen.style.display = 'none';
         gameOverScreen.style.display = 'none';
         settingsScreen.style.display = 'none';
         adjustControlsScreen.style.display = 'none';
         codeGenerationScreen.style.display = 'none';
         
-        // Show network error screen
         networkErrorScreen.style.display = 'flex';
         backToStartBtn.style.display = 'none';
 
-        // Play error sound
         Sound.sNetworkError();
 
-        // Update error details with timestamp
         const errorDetails = document.getElementById('networkErrorDetails');
         errorDetails.innerHTML = `Connection lost at ${new Date().toLocaleTimeString()}<br>Please check your internet connection`;
     }
 
-    // Handle network restore
     function handleNetworkRestore() {
-        // Hide network error screen if it's showing
         if (networkErrorScreen.style.display === 'flex') {
             networkErrorScreen.style.display = 'none';
             
-            // If game was running before, return to start screen
             if (wasGameRunning) {
                 backToStart();
             } else {
                 startScreen.style.display = 'flex';
             }
             
-            // Show notification (optional)
             showTemporaryNotification('Connection restored!');
         }
     }
 
-    // Show temporary notification
     function showTemporaryNotification(message) {
         const notification = document.createElement('div');
         notification.style.cssText = `
@@ -713,7 +834,6 @@
         }, 2000);
     }
 
-    // Check network connectivity
     function checkNetworkConnectivity() {
         fetch('https://www.google.com/favicon.ico', { 
             method: 'HEAD',
@@ -721,13 +841,11 @@
             cache: 'no-cache',
             timeout: 5000
         }).then(() => {
-            // Online
             if (!isOnline) {
                 updateNetworkStatus(true);
                 handleNetworkRestore();
             }
         }).catch(() => {
-            // Offline
             if (isOnline) {
                 updateNetworkStatus(false);
                 handleNetworkLoss();
@@ -735,7 +853,6 @@
         });
     }
 
-    // Network event listeners
     window.addEventListener('online', () => {
         updateNetworkStatus(true);
         handleNetworkRestore();
@@ -746,16 +863,13 @@
         handleNetworkLoss();
     });
 
-    // Periodic network check (every 30 seconds)
     networkCheckInterval = setInterval(checkNetworkConnectivity, 30000);
 
-    // Retry connection button
     networkRetryBtn.addEventListener('click', () => {
         Sound.sButton();
         checkNetworkConnectivity();
     });
 
-    // Back to menu button from network error
     networkBackToMenuBtn.addEventListener('click', () => {
         Sound.sButton();
         networkErrorScreen.style.display = 'none';
@@ -765,7 +879,7 @@
     });
 
     /* =======================
-       GAME LOGIC WITH TOTAL SCORE ONLY
+       GAME LOGIC
        ======================= */
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
@@ -815,7 +929,6 @@
     let generatedCodes = [];
     let codeGeneratedForThisMilestone = false;
 
-    // Load total score from localStorage
     function loadTotalScore() {
         const saved = localStorage.getItem('zombieTotalScoreOnly');
         if (saved) {
@@ -830,14 +943,12 @@
             generatedCodes = JSON.parse(savedCodes);
         }
         
-        // Check if code was already generated for this milestone
         const milestoneReached = localStorage.getItem('zombieMilestoneReached');
         if (milestoneReached === 'true' && totalScore >= TOTAL_SCORE_GOAL) {
             codeGeneratedForThisMilestone = true;
         }
     }
 
-    // Save total score to localStorage
     function saveTotalScore() {
         localStorage.setItem('zombieTotalScoreOnly', totalScore);
         totalScoreSpan.textContent = totalScore.toLocaleString();
@@ -845,25 +956,20 @@
         updateTotalProgress();
     }
 
-    // Update total score progress bar
     function updateTotalProgress() {
         const progress = Math.min((totalScore / TOTAL_SCORE_GOAL) * 100, 100);
         totalProgressFill.style.width = progress + '%';
     }
 
-    // Generate unique 11-digit code
     function generateUniqueCode() {
         let code;
         let isUnique = false;
         
         while (!isUnique) {
-            // Generate 11 random digits
             code = '';
             for (let i = 0; i < 11; i++) {
                 code += Math.floor(Math.random() * 10);
             }
-            
-            // Check if code is unique
             if (!generatedCodes.includes(code)) {
                 isUnique = true;
             }
@@ -876,7 +982,6 @@
         return code;
     }
 
-    // Show code generation screen
     function showCodeGenerationScreen() {
         gameRunning = false;
         countdownActive = false;
@@ -889,7 +994,6 @@
         Sound.sCodeGenerated();
     }
 
-    // Copy code to clipboard
     copyCodeBtn.addEventListener('click', () => {
         const code = generatedCode.textContent;
         navigator.clipboard.writeText(code).then(() => {
@@ -898,8 +1002,6 @@
                 copySuccess.style.display = 'none';
             }, 2000);
         }).catch(err => {
-            console.error('Failed to copy code: ', err);
-            // Fallback for older browsers
             const textarea = document.createElement('textarea');
             textarea.value = code;
             document.body.appendChild(textarea);
@@ -920,13 +1022,9 @@
         Sound.sButton();
     });
 
-    // Road
     const road = { width:0, x:0, lanes:3, markings:[], markingHeight:30, markingWidth:10, markingGap:40 };
-
-    // Vibration
     let vibrationEnabled = true;
 
-    // Control positions
     let controlPositions = {
         leftBtn: { bottom: 100, left: 20 },
         rightBtn: { bottom: 100, right: 20 },
@@ -934,7 +1032,6 @@
         backwardBtn: { bottom: 180, left: 20 }
     };
 
-    // Default control positions
     const defaultControlPositions = {
         leftBtn: { bottom: 100, left: 20 },
         rightBtn: { bottom: 100, right: 20 },
@@ -942,13 +1039,9 @@
         backwardBtn: { bottom: 180, left: 20 }
     };
 
-    // Control size
     let controlSize = 100;
-
-    // Control dragging state
     let isAdjustingControls = false;
 
-    // Initialize road markings
     function initRoadMarkings() {
         road.markings = [];
         for (let i=0;i<20;i++){
@@ -960,11 +1053,10 @@
         }
     }
 
-    // Resize canvas
     function resizeCanvas() {
         const container = document.getElementById('gameContainer');
         canvas.width = container.clientWidth;
-        canvas.height = container.clientHeight;
+        canvas.height = container.clientHeight - 60;
 
         road.width = canvas.width * 0.7;
         road.x = (canvas.width - road.width) / 2;
@@ -974,9 +1066,9 @@
             const aspectRatio = 500/800;
             if (window.innerHeight * aspectRatio > window.innerWidth) {
                 canvas.width = window.innerWidth - 40;
-                canvas.height = canvas.width / aspectRatio;
+                canvas.height = canvas.width / aspectRatio - 60;
             } else {
-                canvas.height = window.innerHeight - 40;
+                canvas.height = window.innerHeight - 100;
                 canvas.width = canvas.height * aspectRatio;
             }
             road.width = canvas.width * 0.7;
@@ -984,28 +1076,25 @@
             initRoadMarkings();
         }
 
-        // Update control positions
         updateControlPositions();
     }
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
 
-    // Update control positions based on saved values
     function updateControlPositions() {
-        leftBtn.style.bottom = controlPositions.leftBtn.bottom + 'px';
+        leftBtn.style.bottom = (controlPositions.leftBtn.bottom + 60) + 'px';
         leftBtn.style.left = controlPositions.leftBtn.left + 'px';
 
-        rightBtn.style.bottom = controlPositions.rightBtn.bottom + 'px';
+        rightBtn.style.bottom = (controlPositions.rightBtn.bottom + 60) + 'px';
         rightBtn.style.right = controlPositions.rightBtn.right + 'px';
 
-        forwardBtn.style.bottom = controlPositions.forwardBtn.bottom + 'px';
+        forwardBtn.style.bottom = (controlPositions.forwardBtn.bottom + 60) + 'px';
         forwardBtn.style.right = controlPositions.forwardBtn.right + 'px';
 
-        backwardBtn.style.bottom = controlPositions.backwardBtn.bottom + 'px';
+        backwardBtn.style.bottom = (controlPositions.backwardBtn.bottom + 60) + 'px';
         backwardBtn.style.left = controlPositions.backwardBtn.left + 'px';
     }
 
-    // Update control sizes
     function updateControlSizes() {
         const size = controlSize;
         leftBtn.style.width = size + 'px';
@@ -1018,13 +1107,11 @@
         backwardBtn.style.height = size + 'px';
     }
 
-    // Save control positions to localStorage
     function saveControlPositions() {
         localStorage.setItem('controlPositions', JSON.stringify(controlPositions));
         localStorage.setItem('controlSize', controlSize);
     }
 
-    // Load control positions from localStorage
     function loadControlPositions() {
         const saved = localStorage.getItem('controlPositions');
         if (saved) {
@@ -1041,7 +1128,6 @@
         }
     }
 
-    // Reset controls to default positions
     function resetControlPositions() {
         controlPositions = JSON.parse(JSON.stringify(defaultControlPositions));
         controlSize = 100;
@@ -1052,7 +1138,6 @@
         saveControlPositions();
     }
 
-    // Make controls draggable
     function makeDraggable(element, positionKey, isLeft = false) {
         let isDragging = false;
         let startX, startY;
@@ -1063,7 +1148,6 @@
 
         function startDrag(e) {
             if (!isAdjustingControls) return;
-
             isDragging = true;
             element.classList.add('dragging');
 
@@ -1075,7 +1159,6 @@
                 startY = e.touches[0].clientY;
             }
 
-            // Get current position values
             const computedStyle = window.getComputedStyle(element);
             startBottom = parseInt(computedStyle.bottom) || 0;
 
@@ -1104,7 +1187,7 @@
             }
 
             const deltaX = currentX - startX;
-            const deltaY = startY - currentY; // Inverted for bottom positioning
+            const deltaY = startY - currentY;
 
             const newBottom = startBottom + deltaY;
 
@@ -1140,25 +1223,21 @@
         }
     }
 
-    // Initialize draggable controls
     makeDraggable(leftBtn, 'leftBtn', true);
     makeDraggable(rightBtn, 'rightBtn', false);
     makeDraggable(forwardBtn, 'forwardBtn', false);
     makeDraggable(backwardBtn, 'backwardBtn', true);
 
-    // Show adjust controls screen
     function showAdjustControlsScreen() {
         settingsScreen.style.display = 'none';
         adjustControlsScreen.style.display = 'flex';
         isAdjustingControls = true;
 
-        // Move control buttons to the adjustment grid
         adjustControlsGrid.appendChild(leftBtn);
         adjustControlsGrid.appendChild(rightBtn);
         adjustControlsGrid.appendChild(forwardBtn);
         adjustControlsGrid.appendChild(backwardBtn);
 
-        // Set initial positions within the grid
         leftBtn.style.position = 'absolute';
         rightBtn.style.position = 'absolute';
         forwardBtn.style.position = 'absolute';
@@ -1167,20 +1246,17 @@
         updateControlPositions();
     }
 
-    // Hide adjust controls screen
     function hideAdjustControlsScreen() {
         adjustControlsScreen.style.display = 'none';
         settingsScreen.style.display = 'flex';
         isAdjustingControls = false;
 
-        // Move control buttons back to the game container
         const gameContainer = document.getElementById('gameContainer');
         gameContainer.appendChild(leftBtn);
         gameContainer.appendChild(rightBtn);
         gameContainer.appendChild(forwardBtn);
         gameContainer.appendChild(backwardBtn);
 
-        // Reset positioning
         leftBtn.style.position = 'absolute';
         rightBtn.style.position = 'absolute';
         forwardBtn.style.position = 'absolute';
@@ -1189,9 +1265,7 @@
         updateControlPositions();
     }
 
-    // Game state
     let savedState = null;
-
     let gameRunning = false;
     let distance = 0;
     let hitCount = 0;
@@ -1203,7 +1277,6 @@
     let lastFrameTime = 0;
     let countdownActive = false;
 
-    // Player
     const player = {
         x: canvas.width/2, y: canvas.height - 100,
         width: 60, height: 100,
@@ -1214,24 +1287,17 @@
         lastShot:0, shootDelay:240
     };
 
-    // Bullets
     const bullets = [];
     const bulletSpeed = 6, bulletWidth = 5, bulletHeight = 15;
-
-    // Zombies
     const zombies = [];
     const zombieWidth = 40, zombieHeight = 60;
     let zombieSpawnRate = 250, zombieSpawnCounter = 0;
-
-    // Explosions / Damage
     const explosions = [];
     const damageEffects = [];
 
-    /* GAME LOOP */
     function gameLoop(timestamp){
         if (!gameRunning) return;
 
-        // Check network status in game loop
         if (!navigator.onLine) {
             handleNetworkLoss();
             return;
@@ -1242,7 +1308,6 @@
 
         ctx.clearRect(0,0,canvas.width,canvas.height);
 
-        // If countdown is active, don't update game elements
         if (countdownActive) {
             updateRoad(); drawRoad();
             updatePlayer(); drawPlayer();
@@ -1255,27 +1320,19 @@
 
         distance += player.currentForwardSpeed * 0.01;
         distanceSpan.textContent = distance.toFixed(2);
-
-        // Update speed indicator (number only)
         speedValue.textContent = Math.round(player.currentForwardSpeed * 10);
-
-        // Update health bar
         healthFill.style.width = `${(1 - hitCount/3) * 100}%`;
 
-        // Auto-fire
         if (gameTime % 8 === 0) { fireBullet(); }
 
-        // Speed ramp
         if (speedIncreaseTimer % 500 === 0 && player.currentForwardSpeed < player.maxSpeed) {
             player.currentForwardSpeed = Math.min(player.maxSpeed, player.currentForwardSpeed + 0.3);
             player.currentSpeed = Math.min(player.maxSpeed, player.currentSpeed + 0.2);
             Sound.sSpeedUp();
         }
 
-        // Make zombies spawn faster as speed increases
         zombieSpawnRate = Math.max(50, 250 - Math.floor(player.currentForwardSpeed * 12));
 
-        // Random mid attacks
         if (Math.random() < 0.002 * player.currentForwardSpeed) {
             zombies.push({
                 x: road.x + 20 + Math.random()*(road.width - 40 - zombieWidth),
@@ -1287,10 +1344,8 @@
             });
         }
 
-        // Angry decay
         if (timestamp - lastZombieHitTime > 3000) { zombieSpeedMultiplier = Math.max(1, zombieSpeedMultiplier - 0.01); }
 
-        // Update/draw
         updateRoad(); drawRoad();
         updatePlayer(); drawPlayer();
         updateBullets(); drawBullets();
@@ -1299,7 +1354,6 @@
         updateDamageEffects(); drawDamageEffects();
         checkCollisions();
 
-        // Difficulty
         if (gameTime % 2000 === 0) {
             zombieSpawnRate = Math.max(150, zombieSpawnRate - 5);
         }
@@ -1307,7 +1361,6 @@
         requestAnimationFrame(gameLoop);
     }
 
-    /* ROAD */
     function updateRoad(){
         const moveSpeed = countdownActive ? 0 : player.currentForwardSpeed;
         for (let i=0;i<road.markings.length;i++){
@@ -1327,7 +1380,6 @@
         ctx.fillRect(road.x+road.width+20,0,canvas.width-(road.x+road.width+20),canvas.height);
     }
 
-    /* PLAYER */
     function updatePlayer(){
         if (countdownActive) return;
 
@@ -1354,7 +1406,6 @@
         }
     }
 
-    /* BULLETS */
     function fireBullet(){
         if (countdownActive) return;
 
@@ -1380,7 +1431,6 @@
         }
     }
 
-    /* ZOMBIES */
     function spawnZombies(){
         if (countdownActive) return;
 
@@ -1446,7 +1496,6 @@
         }
     }
 
-    /* ANGER NEARBY */
     function angerNearbyZombies(x,y){
         const angerRadius = 150, angerDuration = 100;
         for (let i=0;i<zombies.length;i++){
@@ -1465,7 +1514,6 @@
         Sound.sAngryZombie();
     }
 
-    /* EXPLOSIONS */
     function createExplosion(x,y,size){
         explosions.push({ x,y,size,particles:[],life:30 });
         for (let i=0;i<15;i++){
@@ -1498,7 +1546,6 @@
         }
     }
 
-    /* DAMAGE */
     function createDamageEffect(x,y){
         damageEffects.push({x,y,radius:30,alpha:1,life:30});
         if (isMobile && navigator.vibrate && vibrationEnabled) navigator.vibrate(200);
@@ -1519,11 +1566,9 @@
         }
     }
 
-    /* COLLISIONS */
     function checkCollisions(){
         if (countdownActive) return;
 
-        // bullet-zombie
         for (let i=bullets.length-1;i>=0;i--){
             for (let j=zombies.length-1;j>=0;j--){
                 if (checkCollision(bullets[i], zombies[j])){
@@ -1537,11 +1582,9 @@
 
                     zombies.splice(j,1);
                     
-                    // Add to total score only
                     totalScore += 5; 
                     saveTotalScore();
                     
-                    // Check if total score reached 80,000 and code not generated yet
                     if (totalScore >= TOTAL_SCORE_GOAL && !codeGeneratedForThisMilestone) {
                         showCodeGenerationScreen();
                     }
@@ -1551,7 +1594,6 @@
                 }
             }
         }
-        // player-zombie
         for (let i=zombies.length-1;i>=0;i--){
             if (checkCollision(player, zombies[i])){
                 hitCount++; createDamageEffect(zombies[i].x + zombies[i].width/2, zombies[i].y + zombies[i].height/2);
@@ -1567,15 +1609,12 @@
         return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
     }
 
-    /* GAME CONTROL */
     function startGame(){
-        // Check network before starting
         if (!navigator.onLine) {
             handleNetworkLoss();
             return;
         }
 
-        // Hide all screens and show game elements
         startScreen.style.display = "none";
         gameOverScreen.style.display = "none";
         codeGenerationScreen.style.display = "none";
@@ -1584,7 +1623,6 @@
         networkErrorScreen.style.display = "none";
         backToStartBtn.style.display = "flex";
 
-        // Reset game state (but keep total score)
         distance = 0; hitCount = 0;
         distanceSpan.textContent = "0.00";
 
@@ -1597,10 +1635,8 @@
         player.x = canvas.width/2 - player.width/2;
         player.y = canvas.height - 100;
 
-        // Update health bar
         healthFill.style.width = "100%";
 
-        // Start countdown
         startCountdown();
     }
 
@@ -1608,7 +1644,6 @@
         countdownActive = true;
         gameRunning = true;
 
-        // Show countdown
         countdownElement.style.display = 'block';
 
         let count = 3;
@@ -1624,23 +1659,19 @@
                 clearInterval(countdownInterval);
                 countdownElement.style.display = 'none';
 
-                // Start the actual game
                 Sound.resume();
                 Sound.setMasterMute(false);
                 Sound.sStart();
 
-                // End countdown and start full gameplay
                 countdownActive = false;
                 requestAnimationFrame(gameLoop);
             }
         }, 1000);
 
-        // Start the game loop (for rendering during countdown)
         requestAnimationFrame(gameLoop);
     }
 
-    function gameOver(){
-        // Save current state for resume
+    async function gameOver(){
         savedState = {
             distance: distance,
             hitCount: hitCount,
@@ -1656,18 +1687,15 @@
 
         gameRunning = false;
         countdownActive = false;
+        
+        // Show ad on game over
+        await showAdsGramAd("game-over");
+        
         finalTotalScore.textContent = totalScore.toLocaleString();
         finalDistanceDisplay.textContent = distance.toFixed(2);
         gameOverScreen.style.display = "flex";
         backToStartBtn.style.display = "none";
         Sound.sGameOver();
-
-        // ✅ Every time Game Over → show Ad
-        if (typeof Android !== "undefined" && Android.showRewardAd) {
-            Android.showRewardAd();
-        } else {
-            console.log("Reward Ad not available on this platform.");
-        }
     }
 
     function backToStart(){
@@ -1681,7 +1709,6 @@
         networkErrorScreen.style.display = "none";
         backToStartBtn.style.display = "none";
         
-        // Update start screen total score
         startTotalScore.textContent = totalScore.toLocaleString();
     }
     
@@ -1696,14 +1723,12 @@
         startScreen.style.display = 'flex';
     }
 
-    /* VIBRATION TOGGLE */
     function setVibration(enabled){
         vibrationEnabled = enabled;
         if (enabled){ vibrateOnBtn.classList.add('active'); vibrateOffBtn.classList.remove('active'); }
         else { vibrateOnBtn.classList.remove('active'); vibrateOffBtn.classList.add('active'); }
     }
 
-    /* SOUND UI TOGGLES */
     function activate(btnOn, btnOff, flag){
         if(flag){ btnOn.classList.add('active'); btnOff.classList.remove('active'); }
         else { btnOn.classList.remove('active'); btnOff.classList.add('active'); }
@@ -1717,7 +1742,6 @@
         }
     }
 
-    // ===== Ensure first click/touch is recognized =====
     let firstInputHandled = false;
     function handleFirstInput(e){
         if (firstInputHandled) return;
@@ -1731,7 +1755,6 @@
     document.addEventListener('touchstart', handleFirstInput, {capture:true, passive:true});
     document.addEventListener('click', handleFirstInput, {capture:true, passive:true});
 
-    /* EVENTS */
     startBtn.addEventListener('click', ()=>{ Sound.sButton(); startGame(); });
     settingsBtn.addEventListener('click', ()=>{ Sound.sButton(); showSettings(); });
     backToMainBtn.addEventListener('click', ()=>{ Sound.sButton(); hideSettings(); });
@@ -1742,11 +1765,9 @@
     saveControlsBtn.addEventListener('click', ()=>{ Sound.sButton(); hideAdjustControlsScreen(); });
     resetControlsBtn.addEventListener('click', ()=>{ Sound.sButton(); resetControlPositions(); });
 
-    // Vibration
     vibrateOnBtn.addEventListener('click', ()=>{ Sound.sButton(); setVibration(true); });
     vibrateOffBtn.addEventListener('click', ()=>{ Sound.sButton(); setVibration(false); });
 
-    // Sound toggles
     let masterMuted = false;
     soundOnBtn.addEventListener('click', ()=>{ Sound.resume(); Sound.setSfxEnabled(true); activate(soundOnBtn, soundOffBtn, true); Sound.sButton(); });
     soundOffBtn.addEventListener('click', ()=>{ Sound.setSfxEnabled(false); activate(soundOnBtn, soundOffBtn, false); });
@@ -1758,7 +1779,6 @@
         if(!masterMuted) { Sound.resume(); Sound.sButton(); }
     });
 
-    // Control size slider
     controlSizeSlider.addEventListener('input', ()=>{
         controlSize = parseInt(controlSizeSlider.value);
         controlSizeValue.textContent = controlSize + '%';
@@ -1766,7 +1786,6 @@
         saveControlPositions();
     });
 
-    // Touch controls
     leftBtn.addEventListener('touchstart', e=>{ e.preventDefault(); player.movingLeft = true; }, {passive:false});
     leftBtn.addEventListener('touchend', e=>{ e.preventDefault(); player.movingLeft = false; }, {passive:false});
     rightBtn.addEventListener('touchstart', e=>{ e.preventDefault(); player.movingRight = true; }, {passive:false});
@@ -1776,7 +1795,6 @@
     backwardBtn.addEventListener('touchstart', e=>{ e.preventDefault(); player.movingBackward = true; }, {passive:false});
     backwardBtn.addEventListener('touchend', e=>{ e.preventDefault(); player.movingBackward = false; }, {passive:false});
 
-    // Mouse (PC)
     leftBtn.addEventListener('mousedown', ()=>{ player.movingLeft = true; });
     leftBtn.addEventListener('mouseup', ()=>{ player.movingLeft = false; });
     leftBtn.addEventListener('mouseleave', ()=>{ player.movingLeft = false; });
@@ -1790,7 +1808,6 @@
     backwardBtn.addEventListener('mouseup', ()=>{ player.movingBackward = false; });
     backwardBtn.addEventListener('mouseleave', ()=>{ player.movingBackward = false; });
 
-    // Keyboard
     document.addEventListener('keydown', (e)=>{
         if (!gameRunning || countdownActive) return;
         if (e.key === 'ArrowLeft' || e.key === 'a') player.movingLeft = true;
@@ -1805,24 +1822,22 @@
         else if (e.key === 'ArrowDown' || e.key === 's') player.movingBackward = false;
     });
 
-    // Layout on PC
     window.addEventListener('load', ()=>{
         resizeCanvas();
         loadControlPositions();
         loadTotalScore();
         updateNetworkStatus(navigator.onLine);
+        initAdsGram();
 
         if (window.innerWidth >= 768){
             document.body.style.display='flex';
             document.body.style.justifyContent='center';
             document.body.style.alignItems='center';
         }
-        // Set initial icons/state
         toggleMasterIcon(false);
         activate(soundOnBtn, soundOffBtn, true);
     });
 
-    // Clean up interval on page unload
     window.addEventListener('beforeunload', () => {
         if (networkCheckInterval) {
             clearInterval(networkCheckInterval);
