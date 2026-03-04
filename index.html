@@ -1,0 +1,1833 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Zombie Apocalypse Driving</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none}
+        body{overflow:hidden;background-color:#222;font-family:Arial, sans-serif;position:fixed;width:100%;height:100%}
+        #gameContainer{position:relative;width:100%;height:100%;overflow:hidden}
+        #gameCanvas{background-color:#4a6b7c;display:block;width:100%;height:100%}
+        #startScreen,#gameOverScreen,#settingsScreen,#adjustControlsScreen,#codeGenerationScreen,#networkErrorScreen{
+            position:absolute;top:0;left:0;width:100%;height:100%;
+            background-color:rgba(0,0,0,.8);display:flex;flex-direction:column;justify-content:center;align-items:center;
+            color:#fff;z-index:30;text-align:center;padding:20px}
+        #gameOverScreen,#settingsScreen,#adjustControlsScreen,#codeGenerationScreen,#networkErrorScreen{display:none}
+        
+        /* Network Error Screen Specific Styles */
+        #networkErrorScreen {
+            background: linear-gradient(135deg, #c0392b 0%, #e74c3c 100%);
+            z-index: 100;
+        }
+        .network-error-icon {
+            font-size: 5rem;
+            margin-bottom: 20px;
+            animation: pulse 2s infinite;
+        }
+        .network-error-title {
+            font-size: 2rem;
+            color: #fff;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .network-error-message {
+            font-size: 1.2rem;
+            color: #fff;
+            margin-bottom: 30px;
+            opacity: 0.9;
+        }
+        .network-error-details {
+            background: rgba(0,0,0,0.2);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            font-size: 1rem;
+            color: #f1c40f;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        
+        .btn{background:#f1c40f;color:#2c3e50;border:none;padding:12px 25px;margin:10px;font-size:16px;border-radius:5px;cursor:pointer;
+            font-weight:bold;box-shadow:0 4px 0 #f39c12;transition:all .1s;min-width:150px}
+        .btn:active{transform:translateY(4px);box-shadow:none}
+        .btn-ads{background:#9b59b6;color:#fff;box-shadow:0 4px 0 #8e44ad}
+        .btn-network{background:#3498db;color:#fff;box-shadow:0 4px 0 #2980b9}
+        .toggle-btn{background:#34495e;color:#fff;border:none;padding:10px 20px;margin:10px;font-size:14px;border-radius:5px;cursor:pointer;
+            font-weight:bold;box-shadow:0 2px 0 #2c3e50;transition:all .1s;min-width:150px}
+        .toggle-btn.active{background:#3498db;box-shadow:0 2px 0 #2980b9}
+        .small-btn{background:rgba(0,0,0,.7);color:#fff;border:none;padding:8px;margin:5px;font-size:16px;border-radius:50%;cursor:pointer;
+            font-weight:bold;box-shadow:0 2px 0 #444;transition:all .1s;width:40px;height:40px;display:flex;justify-content:center;align-items:center}
+        .small-btn:active{transform:translateY(2px);box-shadow:none}
+        .controls{position:absolute;bottom:20px;width:100%;display:flex;justify-content:space-between;padding:0 20px;z-index:5;touch-action:manipulation}
+        .control-btn{
+            width:100px;
+            height:100px;
+            border-radius:50%;
+            background:rgba(128,128,128,0.5);
+            display:flex;
+            justify-content:center;
+            align-items:center;
+            font-size:36px;
+            color:white;
+            user-select:none;
+            touch-action:manipulation;
+            cursor:move;
+            border:2px solid rgba(255,255,255,0.3);
+            z-index: 25;
+        }
+        .control-btn.dragging{opacity:0.8;transform:scale(1.1)}
+        #leftBtn{position:absolute;bottom:100px;left:20px}
+        #rightBtn{position:absolute;bottom:100px;right:20px}
+        #forwardBtn{position:absolute;bottom:180px;right:20px}
+        #backwardBtn{position:absolute;bottom:180px;left:20px}
+        h1{font-size:2rem;margin-bottom:15px;color:#f1c40f;text-shadow:2px 2px 4px #000}
+        h2{font-size:1.5rem;margin-bottom:10px;color:#fff}
+        #totalScoreDisplay,#distanceDisplay,#soundToggleBtn{
+            position:absolute;top:15px;background:rgba(0,0,0,.7);color:#fff;padding:8px 12px;border-radius:20px;font-size:16px;font-weight:bold;z-index:5}
+        #totalScoreDisplay{left:15px; background:rgba(241,196,15,0.9); color:#2c3e50; border:2px solid #f39c12}
+        #distanceDisplay{right:15px; background:rgba(52, 152, 219, 0.9); color:white; border:2px solid #2980b9}
+        #soundToggleBtn{right:15px; top:60px; border:none; cursor:pointer; font-size:20px; background:rgba(0,0,0,.7); width:40px; height:40px; display:flex; justify-content:center; align-items:center}
+        #backToStartBtn{
+            position:absolute;top:60px;left:15px;background:rgba(0,0,0,.7);color:#fff;border:none;padding:8px;font-size:20px;border-radius:50%;
+            cursor:pointer;font-weight:bold;box-shadow:0 2px 0 #444;transition:all .1s;z-index:5;display:none;width:40px;height:40px;display:flex;justify-content:center;align-items:center}
+        #backToStartBtn:active{transform:translateY(2px);box-shadow:none}
+        .settings{margin-top:15px}
+        .settings-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:center;color:#ddd}
+        .settings-row span{opacity:.9}
+        #countdown {
+            position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+            font-size:5rem;color:#f1c40f;text-shadow:0 0 10px rgba(241,196,15,0.8);
+            z-index:20;display:none;
+        }
+        .settings-header {
+            margin: 15px 0;
+            color: #f1c40f;
+            font-size: 1.2rem;
+        }
+        .settings-hint {
+            color: #ddd;
+            margin-bottom: 15px;
+            max-width: 80%;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+        .btn-controls {
+            background: #1abc9c;
+            box-shadow: 0 4px 0 #16a085;
+        }
+        /* Adjust Controls Screen */
+        #adjustControlsScreen {
+            z-index: 15;
+            background-color: rgba(0,0,0,0.9);
+        }
+        .adjust-controls-grid {
+            position: relative;
+            width: 100%;
+            height: 70%;
+            background-color: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            margin: 20px 0;
+            border: 1px dashed #f1c40f;
+        }
+        .adjust-controls-buttons {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 300px;
+        }
+        /* Control symbols */
+        .control-symbol {
+            font-size: 28px;
+            pointer-events: none;
+        }
+        /* Gamepad symbols */
+        .gamepad-symbol {
+            width: 40px;
+            height: 40px;
+            background-color: rgba(0, 0, 0, 0.6);
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        .gamepad-arrow {
+            width: 0;
+            height: 0;
+            position: absolute;
+        }
+        .gamepad-up {
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-bottom: 15px solid white;
+            top: 8px;
+        }
+        .gamepad-down {
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-top: 15px solid white;
+            bottom: 8px;
+        }
+        .gamepad-left {
+            border-top: 10px solid transparent;
+            border-bottom: 10px solid transparent;
+            border-right: 15px solid white;
+            left: 8px;
+        }
+        .gamepad-right {
+            border-top: 10px solid transparent;
+            border-bottom: 10px solid transparent;
+            border-left: 15px solid white;
+            right: 8px;
+        }
+        /* Control size slider */
+        .control-size-slider {
+            width: 100%;
+            max-width: 300px;
+            margin: 15px 0;
+        }
+        .control-size-label {
+            color: #ddd;
+            margin-bottom: 8px;
+        }
+        /* Button images */
+        .btn-image {
+            width: 24px;
+            height: 24px;
+            object-fit: contain;
+        }
+        /* Health bar */
+        #healthBar {
+            position: absolute;
+            top: 60px;
+            left: 15px;
+            width: 100px;
+            height: 10px;
+            background: rgba(0,0,0,0.5);
+            border-radius: 5px;
+            overflow: hidden;
+            z-index: 5;
+        }
+        #healthFill {
+            height: 100%;
+            width: 100%;
+            background: linear-gradient(90deg, #e74c3c, #2ecc71);
+            transition: width 0.3s;
+        }
+        /* Speed indicator */
+        #speedIndicator {
+            position: absolute;
+            top: 60px;
+            right: 15px;
+            background: rgba(0,0,0,0.7);
+            color: #fff;
+            padding: 4px 8px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: bold;
+            z-index: 5;
+        }
+        /* Code Generation Screen */
+        #codeGenerationScreen {
+            z-index: 20;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .code-display {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border: 2px solid #f1c40f;
+        }
+        .generated-code {
+            font-size: 2rem;
+            font-family: monospace;
+            letter-spacing: 5px;
+            color: #f1c40f;
+            word-break: break-all;
+            margin: 10px 0;
+        }
+        .copy-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin: 10px;
+            transition: all 0.3s;
+        }
+        .copy-btn:hover {
+            background: #2980b9;
+        }
+        .copy-success {
+            color: #2ecc71;
+            margin-top: 10px;
+            font-size: 0.9rem;
+        }
+        /* Total score progress */
+        .total-score-progress {
+            position: absolute;
+            top: 60px;
+            left: 15px;
+            width: 100px;
+            height: 5px;
+            background: rgba(0,0,0,0.5);
+            border-radius: 5px;
+            overflow: hidden;
+            z-index: 5;
+        }
+        #totalProgressFill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #f1c40f, #e67e22);
+            transition: width 0.3s;
+        }
+        /* Game Over Screen */
+        #finalTotalScore {
+            color: #f1c40f;
+            font-size: 2rem;
+            margin: 10px 0;
+        }
+        #finalDistance {
+            color: #3498db;
+            font-size: 1.5rem;
+        }
+        /* Distance number only style */
+        .distance-number {
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+        /* Network Status Indicator */
+        #networkStatus {
+            position: absolute;
+            bottom: 15px;
+            left: 15px;
+            background: rgba(0,0,0,0.7);
+            color: #2ecc71;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            z-index: 5;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        #networkStatus.offline {
+            color: #e74c3c;
+        }
+        .network-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #2ecc71;
+            display: inline-block;
+        }
+        #networkStatus.offline .network-dot {
+            background: #e74c3c;
+        }
+        /* Touch */
+        @media (hover:none){
+            .btn{padding:15px 30px;font-size:18px}
+            .toggle-btn{padding:12px 25px;font-size:16px}
+            .small-btn{padding:10px;font-size:20px;width:45px;height:45px}
+            #backToStartBtn{padding:10px;font-size:20px;width:45px;height:45px;top:70px;left:15px}
+            #soundToggleBtn{font-size:22px;width:45px;height:45px;top:70px;right:15px}
+            .controls{bottom:30px}
+            #leftBtn{bottom:120px;left:20px}
+            #rightBtn{bottom:120px;right:20px}
+            #forwardBtn{bottom:210px;right:20px}
+            #backwardBtn{bottom:210px;left:20px}
+            #healthBar, #speedIndicator, .total-score-progress {top: 80px;}
+            #totalScoreDisplay{top: 15px;}
+        }
+        /* PC */
+        @media (min-width:768px){
+            #gameContainer{max-width:500px;max-height:800px;margin:0 auto;border:2px solid #444;border-radius:10px;overflow:hidden;position:relative;top:50%;transform:translateY(-50%)}
+        }
+    </style>
+
+    <!-- AdMob App ID inserted by assistant -->
+    <meta name="com.google.android.gms.ads.APPLICATION_ID" content="ca-app-pub-4830984031121626~6402765319">
+    <script>
+        window.ADMOB_APP_ID = "ca-app-pub-4830984031121626~6402765319";
+        console.log("AdMob App ID set:", window.ADMOB_APP_ID);
+    </script>
+</head>
+<body>
+<div id="gameContainer">
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="countdown">3</div>
+
+    <div id="totalScoreDisplay">🏆 <span id="totalScore">0</span></div>
+    <div class="total-score-progress">
+        <div id="totalProgressFill"></div>
+    </div>
+    <div id="distanceDisplay"><span id="distance">0.00</span></div>
+    <div id="healthBar"><div id="healthFill"></div></div>
+    <div id="speedIndicator">⚡ <span id="speedValue">0</span></div>
+    
+    <!-- Network Status Indicator -->
+    <div id="networkStatus">
+        <span class="network-dot"></span>
+        <span id="networkStatusText">Online</span>
+    </div>
+    
+    <button id="backToStartBtn" class="small-btn" title="Back">
+        <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0id2hpdGUiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCI+PHBhdGggZD0iTTIwIDExSDcuODNsNS41OS01LjU5TDEyIDRsLTggOCA4IDggMS40MS0xLjQxTDcuODMgMTNIMjB2LTJ6Ii8+PC9zdmc+" class="btn-image" alt="Back">
+    </button>
+    <button id="soundToggleBtn" title="Mute/Unmute" class="small-btn">
+        <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0id2hpdGUiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCI+PHBhdGggZD0iTTMgOXY2aDRsNSA1VjRMNyA5SDN6bTEzLjUgM2MwLTEuNzctMS4wMi0zLjI5LTIuNS00LjAzdjguMDUgYzEuNDgtLjczIDIuNS0yLjI1IDIuNS00LjAyek0xNCAzLjIzdjIuMDZjMi44OS44NiA1IDMuNTQgNSA2Ljcxcy0yLjExIDUuODUtNSA2LjcxdjIuMDZjNC4wMS0uOTEgNy00LjQ5IDctOC43N3MtMi45OS03Ljg2LTctOC43N3oiLz48L3N2Zz4=" class="btn-image" alt="Sound">
+    </button>
+
+    <div id="startScreen">
+        <h1>🧟 Zombie Apocalypse Driving</h1>
+        <div style="background:rgba(241,196,15,0.2); padding:15px; border-radius:10px; margin:20px 0;">
+            <h2 style="color:#f1c40f;">Current Total Score</h2>
+            <div style="font-size:3rem; color:#fff;" id="startTotalScore">0</div>
+            <div style="margin-top:10px;">Target: 80,000 to unlock reward!</div>
+        </div>
+        <button class="btn" id="startBtn">🚗 Start Game</button>
+        <button class="btn" id="settingsBtn">⚙️ Settings</button>
+    </div>
+
+    <div id="settingsScreen">
+        <h1>⚙️ Game Settings</h1>
+
+        <div class="settings-header">Control Customization</div>
+        <div class="settings-hint">You can reposition the control buttons anywhere on the screen. Drag them to your preferred position.</div>
+        <button class="btn btn-controls" id="adjustControlsBtn">🎮 Adjust Controls</button>
+
+        <div class="settings-header">Sound Settings</div>
+        <div class="settings-row">
+            <span>Vibration:</span>
+            <button class="toggle-btn active" id="vibrateOnBtn">ON</button>
+            <button class="toggle-btn" id="vibrateOffBtn">OFF</button>
+        </div>
+
+        <div class="settings-row">
+            <span>Sound (SFX):</span>
+            <button class="toggle-btn active" id="soundOnBtn">ON</button>
+            <button class="toggle-btn" id="soundOffBtn">OFF</button>
+        </div>
+
+        <button class="btn" id="backToMainBtn" style="margin-top: 20px;">🔙 Back to Main Menu</button>
+    </div>
+
+    <div id="adjustControlsScreen">
+        <h1>🎮 Adjust Controls</h1>
+        <div class="settings-hint">Drag the control buttons to your preferred positions</div>
+
+        <div class="control-size-label">Control Size: <span id="controlSizeValue">100%</span></div>
+        <input type="range" min="70" max="130" value="100" class="control-size-slider" id="controlSizeSlider">
+
+        <div class="adjust-controls-grid" id="adjustControlsGrid">
+            <!-- Control buttons will be placed here during adjustment -->
+        </div>
+
+        <div class="adjust-controls-buttons">
+            <button class="btn" id="resetControlsBtn">🔄 Reset to Default</button>
+            <button class="btn" id="saveControlsBtn">💾 Save Controls</button>
+        </div>
+    </div>
+
+    <div id="codeGenerationScreen">
+        <h1>🎉 CONGRATULATIONS! 🎉</h1>
+        <h2>You've reached 80,000 Total Score!</h2>
+        <div class="code-display">
+            <p>Your Unique Reward Code:</p>
+            <div class="generated-code" id="generatedCode">XXXXXXXXXXX</div>
+            <button class="copy-btn" id="copyCodeBtn">📋 Copy Code</button>
+            <div id="copySuccess" class="copy-success" style="display: none;">✅ Code copied to clipboard!</div>
+        </div>
+        <p class="settings-hint">Save this code to redeem your reward!</p>
+        <button class="btn" id="codeBackToMenuBtn">🔙 Back to Menu</button>
+    </div>
+
+    <div id="gameOverScreen">
+        <h1>💀 Game Over! 💀</h1>
+        <h2>Total Score</h2>
+        <div id="finalTotalScore">0</div>
+        <h2 id="finalDistance">0.00</h2>
+        <button class="btn" id="restartBtn">🔄 Play Again</button>
+        <button class="btn" id="backToMenuBtn">🔙 Back to Menu</button>
+    </div>
+
+    <!-- Network Error Screen -->
+    <div id="networkErrorScreen">
+        <div class="network-error-icon">📡</div>
+        <h1 class="network-error-title">Network Error!</h1>
+        <div class="network-error-message">Your internet connection has been lost</div>
+        <div class="network-error-details" id="networkErrorDetails">
+            Please check your connection and try again
+        </div>
+        <button class="btn btn-network" id="networkRetryBtn">🔄 Retry Connection</button>
+        <button class="btn" id="networkBackToMenuBtn">🔙 Back to Menu</button>
+    </div>
+
+    <div class="control-btn" id="leftBtn">←</div>
+    <div class="control-btn" id="rightBtn">→</div>
+    <div class="control-btn" id="forwardBtn">↑</div>
+    <div class="control-btn" id="backwardBtn">↓</div>
+</div>
+
+<script>
+    /* =======================
+       SOUND SYSTEM (WebAudio)
+       ======================= */
+    const Sound = (() => {
+        let ctx = null, masterGain, sfxGain;
+        let unlocked = false;
+
+        let sfxEnabled = true;
+        let masterMuted = false;
+
+        const clamp = (n, a, b)=>Math.max(a, Math.min(b, n));
+
+        function ensureCtx() {
+            if (!ctx) {
+                ctx = new (window.AudioContext || window.webkitAudioContext)();
+                masterGain = ctx.createGain(); masterGain.gain.value = 0.9; masterGain.connect(ctx.destination);
+                sfxGain = ctx.createGain(); sfxGain.gain.value = 0.9; sfxGain.connect(masterGain);
+            }
+        }
+
+        function resume() {
+            ensureCtx();
+            if (ctx.state === 'suspended') ctx.resume();
+            unlocked = true;
+        }
+
+        function setMasterMute(m) { masterMuted = m; masterGain.gain.linearRampToValueAtTime(m?0:0.9, now()+0.05); }
+        function setSfxEnabled(v){ sfxEnabled = v; }
+
+        function now(){ ensureCtx(); return ctx.currentTime; }
+
+        function blip({type='sine', freq=440, len=0.1, gain=0.3, attack=0.005, decay=0.08, dest=sfxGain, startFreq=null, endFreq=null}) {
+            if (!sfxEnabled || masterMuted) return;
+            ensureCtx();
+            const o = ctx.createOscillator();
+            const g = ctx.createGain();
+            o.type = type;
+            o.frequency.value = startFreq ?? freq;
+            g.gain.value = 0;
+            o.connect(g); g.connect(dest);
+            const t = now();
+            g.gain.linearRampToValueAtTime(gain, t+attack);
+            g.gain.linearRampToValueAtTime(0.0001, t+len);
+            if (startFreq!=null && endFreq!=null){
+                o.frequency.setValueAtTime(startFreq, t);
+                o.frequency.exponentialRampToValueAtTime(clamp(endFreq, 20, 15000), t+len);
+            }
+            o.start(t);
+            o.stop(t+len+0.02);
+        }
+
+        function noiseBurst({len=0.2, gain=0.35, hp=500, lp=8000, dest=sfxGain}) {
+            if (!sfxEnabled || masterMuted) return;
+            ensureCtx();
+            const buffer = ctx.createBuffer(1, ctx.sampleRate * len, ctx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i=0;i<data.length;i++) data[i] = Math.random()*2-1;
+
+            const src = ctx.createBufferSource(); src.buffer = buffer;
+            const g = ctx.createGain(); g.gain.value = gain;
+            const hpf = ctx.createBiquadFilter(); hpf.type='highpass'; hpf.frequency.value = hp;
+            const lpf = ctx.createBiquadFilter(); lpf.type='lowpass'; lpf.frequency.value = lp;
+
+            src.connect(hpf); hpf.connect(lpf); lpf.connect(g); g.connect(dest);
+            const t = now();
+            g.gain.setValueAtTime(gain, t);
+            g.gain.exponentialRampToValueAtTime(0.0001, t+len);
+            src.start(t); src.stop(t+len+0.02);
+            return {src, g, lpf, hpf};
+        }
+
+        /* Public, event-based sounds */
+        function sButton(){ blip({type:'triangle', startFreq:700, endFreq:900, len:0.07, gain:0.2}); }
+        function sStart(){
+            blip({type:'sawtooth', startFreq:250, endFreq:900, len:0.35, gain:0.25});
+            noiseBurst({len:0.2, gain:0.15, hp:1000, lp:6000});
+        }
+        function sShoot(){
+            blip({type:'square', startFreq:950, endFreq:600, len:0.08, gain:0.25});
+            noiseBurst({len:0.06, gain:0.2, hp:1200, lp:5000});
+        }
+        function sExplosion(){
+            const n = noiseBurst({len:0.6, gain:0.5, hp:60, lp:2500});
+            blip({type:'sine', startFreq:200, endFreq:60, len:0.5, gain:0.15});
+            if (n && n.lpf){
+                const t = now();
+                n.lpf.frequency.setValueAtTime(2500, t);
+                n.lpf.frequency.exponentialRampToValueAtTime(600, t+0.45);
+            }
+        }
+        function sHit(){
+            blip({type:'sine', startFreq:400, endFreq:120, len:0.2, gain:0.2});
+            noiseBurst({len:0.08, gain:0.25, hp:800, lp:3000});
+        }
+        function sAngryZombie(){
+            blip({type:'sine', freq:140, len:0.25, gain:0.18});
+            blip({type:'sine', freq:110, len:0.25, gain:0.18});
+        }
+        function sSpeedUp(){
+            blip({type:'sawtooth', startFreq:300, endFreq:600, len:0.25, gain:0.18});
+        }
+        function sGameOver(){
+            blip({type:'sine', startFreq:400, endFreq:100, len:0.7, gain:0.25});
+        }
+        function sCountdown(){
+            blip({type:'sine', startFreq:600, endFreq:300, len:0.5, gain:0.2});
+        }
+        function sCodeGenerated(){
+            blip({type:'sawtooth', startFreq:400, endFreq:1200, len:0.8, gain:0.3});
+            noiseBurst({len:0.5, gain:0.25, hp:500, lp:4000});
+        }
+        function sNetworkError(){
+            blip({type:'sawtooth', startFreq:300, endFreq:100, len:0.6, gain:0.3});
+            noiseBurst({len:0.4, gain:0.4, hp:200, lp:2000});
+        }
+
+        return {
+            resume, setMasterMute, setSfxEnabled,
+            sButton, sStart, sShoot, sExplosion, sHit, sAngryZombie, sSpeedUp, sGameOver, sCountdown, sCodeGenerated, sNetworkError
+        };
+    })();
+
+    /* =======================
+       NETWORK ERROR HANDLING
+       ======================= */
+    const networkErrorScreen = document.getElementById('networkErrorScreen');
+    const networkStatus = document.getElementById('networkStatus');
+    const networkStatusText = document.getElementById('networkStatusText');
+    const networkRetryBtn = document.getElementById('networkRetryBtn');
+    const networkBackToMenuBtn = document.getElementById('networkBackToMenuBtn');
+    
+    let isOnline = navigator.onLine;
+    let networkCheckInterval;
+    let wasGameRunning = false;
+    let gameStateBeforeNetworkLoss = null;
+
+    // Update network status indicator
+    function updateNetworkStatus(online) {
+        isOnline = online;
+        if (online) {
+            networkStatus.classList.remove('offline');
+            networkStatusText.textContent = 'Online';
+        } else {
+            networkStatus.classList.add('offline');
+            networkStatusText.textContent = 'Offline';
+        }
+    }
+
+    // Handle network loss
+    function handleNetworkLoss() {
+        if (!gameRunning && !countdownActive) return; // Only show if game is active
+        
+        // Save current game state
+        wasGameRunning = gameRunning;
+        if (gameRunning) {
+            gameStateBeforeNetworkLoss = {
+                distance: distance,
+                hitCount: hitCount,
+                playerX: player.x,
+                playerY: player.y,
+                playerSpeed: player.currentSpeed,
+                playerForwardSpeed: player.currentForwardSpeed,
+                zombieSpawnRate: zombieSpawnRate,
+                zombieSpeedMultiplier: zombieSpeedMultiplier,
+                gameTime: gameTime,
+                speedIncreaseTimer: speedIncreaseTimer
+            };
+        }
+
+        // Stop the game
+        gameRunning = false;
+        countdownActive = false;
+
+        // Hide all other screens
+        startScreen.style.display = 'none';
+        gameOverScreen.style.display = 'none';
+        settingsScreen.style.display = 'none';
+        adjustControlsScreen.style.display = 'none';
+        codeGenerationScreen.style.display = 'none';
+        
+        // Show network error screen
+        networkErrorScreen.style.display = 'flex';
+        backToStartBtn.style.display = 'none';
+
+        // Play error sound
+        Sound.sNetworkError();
+
+        // Update error details with timestamp
+        const errorDetails = document.getElementById('networkErrorDetails');
+        errorDetails.innerHTML = `Connection lost at ${new Date().toLocaleTimeString()}<br>Please check your internet connection`;
+    }
+
+    // Handle network restore
+    function handleNetworkRestore() {
+        // Hide network error screen if it's showing
+        if (networkErrorScreen.style.display === 'flex') {
+            networkErrorScreen.style.display = 'none';
+            
+            // If game was running before, return to start screen
+            if (wasGameRunning) {
+                backToStart();
+            } else {
+                startScreen.style.display = 'flex';
+            }
+            
+            // Show notification (optional)
+            showTemporaryNotification('Connection restored!');
+        }
+    }
+
+    // Show temporary notification
+    function showTemporaryNotification(message) {
+        const notification = document.createElement('div');
+        notification.style.cssText = `
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(46, 204, 113, 0.9);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 10px;
+            z-index: 200;
+            font-size: 1.2rem;
+            animation: fadeOut 2s forwards;
+        `;
+        notification.textContent = message;
+        document.getElementById('gameContainer').appendChild(notification);
+        
+        setTimeout(() => {
+            notification.remove();
+        }, 2000);
+    }
+
+    // Check network connectivity
+    function checkNetworkConnectivity() {
+        fetch('https://www.google.com/favicon.ico', { 
+            method: 'HEAD',
+            mode: 'no-cors',
+            cache: 'no-cache',
+            timeout: 5000
+        }).then(() => {
+            // Online
+            if (!isOnline) {
+                updateNetworkStatus(true);
+                handleNetworkRestore();
+            }
+        }).catch(() => {
+            // Offline
+            if (isOnline) {
+                updateNetworkStatus(false);
+                handleNetworkLoss();
+            }
+        });
+    }
+
+    // Network event listeners
+    window.addEventListener('online', () => {
+        updateNetworkStatus(true);
+        handleNetworkRestore();
+    });
+
+    window.addEventListener('offline', () => {
+        updateNetworkStatus(false);
+        handleNetworkLoss();
+    });
+
+    // Periodic network check (every 30 seconds)
+    networkCheckInterval = setInterval(checkNetworkConnectivity, 30000);
+
+    // Retry connection button
+    networkRetryBtn.addEventListener('click', () => {
+        Sound.sButton();
+        checkNetworkConnectivity();
+    });
+
+    // Back to menu button from network error
+    networkBackToMenuBtn.addEventListener('click', () => {
+        Sound.sButton();
+        networkErrorScreen.style.display = 'none';
+        wasGameRunning = false;
+        gameStateBeforeNetworkLoss = null;
+        backToStart();
+    });
+
+    /* =======================
+       GAME LOGIC WITH TOTAL SCORE ONLY
+       ======================= */
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const startScreen = document.getElementById('startScreen');
+    const gameOverScreen = document.getElementById('gameOverScreen');
+    const settingsScreen = document.getElementById('settingsScreen');
+    const adjustControlsScreen = document.getElementById('adjustControlsScreen');
+    const codeGenerationScreen = document.getElementById('codeGenerationScreen');
+    const startBtn = document.getElementById('startBtn');
+    const settingsBtn = document.getElementById('settingsBtn');
+    const backToMainBtn = document.getElementById('backToMainBtn');
+    const restartBtn = document.getElementById('restartBtn');
+    const backToMenuBtn = document.getElementById('backToMenuBtn');
+    const backToStartBtn = document.getElementById('backToStartBtn');
+    const leftBtn = document.getElementById('leftBtn');
+    const rightBtn = document.getElementById('rightBtn');
+    const forwardBtn = document.getElementById('forwardBtn');
+    const backwardBtn = document.getElementById('backwardBtn');
+    const totalScoreSpan = document.getElementById('totalScore');
+    const startTotalScore = document.getElementById('startTotalScore');
+    const distanceSpan = document.getElementById('distance');
+    const speedValue = document.getElementById('speedValue');
+    const finalTotalScore = document.getElementById('finalTotalScore');
+    const finalDistanceDisplay = document.getElementById('finalDistance');
+    const vibrateOnBtn = document.getElementById('vibrateOnBtn');
+    const vibrateOffBtn = document.getElementById('vibrateOffBtn');
+    const soundOnBtn = document.getElementById('soundOnBtn');
+    const soundOffBtn = document.getElementById('soundOffBtn');
+    const soundToggleBtn = document.getElementById('soundToggleBtn');
+    const countdownElement = document.getElementById('countdown');
+    const adjustControlsBtn = document.getElementById('adjustControlsBtn');
+    const saveControlsBtn = document.getElementById('saveControlsBtn');
+    const resetControlsBtn = document.getElementById('resetControlsBtn');
+    const adjustControlsGrid = document.getElementById('adjustControlsGrid');
+    const controlSizeSlider = document.getElementById('controlSizeSlider');
+    const controlSizeValue = document.getElementById('controlSizeValue');
+    const healthFill = document.getElementById('healthFill');
+    const totalProgressFill = document.getElementById('totalProgressFill');
+    const generatedCode = document.getElementById('generatedCode');
+    const copyCodeBtn = document.getElementById('copyCodeBtn');
+    const copySuccess = document.getElementById('copySuccess');
+    const codeBackToMenuBtn = document.getElementById('codeBackToMenuBtn');
+
+    // Total Score System
+    let totalScore = 0;
+    const TOTAL_SCORE_GOAL = 80000;
+    let generatedCodes = [];
+    let codeGeneratedForThisMilestone = false;
+
+    // Load total score from localStorage
+    function loadTotalScore() {
+        const saved = localStorage.getItem('zombieTotalScoreOnly');
+        if (saved) {
+            totalScore = parseInt(saved);
+            totalScoreSpan.textContent = totalScore.toLocaleString();
+            startTotalScore.textContent = totalScore.toLocaleString();
+            updateTotalProgress();
+        }
+        
+        const savedCodes = localStorage.getItem('zombieGeneratedCodesOnly');
+        if (savedCodes) {
+            generatedCodes = JSON.parse(savedCodes);
+        }
+        
+        // Check if code was already generated for this milestone
+        const milestoneReached = localStorage.getItem('zombieMilestoneReached');
+        if (milestoneReached === 'true' && totalScore >= TOTAL_SCORE_GOAL) {
+            codeGeneratedForThisMilestone = true;
+        }
+    }
+
+    // Save total score to localStorage
+    function saveTotalScore() {
+        localStorage.setItem('zombieTotalScoreOnly', totalScore);
+        totalScoreSpan.textContent = totalScore.toLocaleString();
+        startTotalScore.textContent = totalScore.toLocaleString();
+        updateTotalProgress();
+    }
+
+    // Update total score progress bar
+    function updateTotalProgress() {
+        const progress = Math.min((totalScore / TOTAL_SCORE_GOAL) * 100, 100);
+        totalProgressFill.style.width = progress + '%';
+    }
+
+    // Generate unique 11-digit code
+    function generateUniqueCode() {
+        let code;
+        let isUnique = false;
+        
+        while (!isUnique) {
+            // Generate 11 random digits
+            code = '';
+            for (let i = 0; i < 11; i++) {
+                code += Math.floor(Math.random() * 10);
+            }
+            
+            // Check if code is unique
+            if (!generatedCodes.includes(code)) {
+                isUnique = true;
+            }
+        }
+        
+        generatedCodes.push(code);
+        localStorage.setItem('zombieGeneratedCodesOnly', JSON.stringify(generatedCodes));
+        localStorage.setItem('zombieMilestoneReached', 'true');
+        codeGeneratedForThisMilestone = true;
+        return code;
+    }
+
+    // Show code generation screen
+    function showCodeGenerationScreen() {
+        gameRunning = false;
+        countdownActive = false;
+        const code = generateUniqueCode();
+        generatedCode.textContent = code;
+        codeGenerationScreen.style.display = 'flex';
+        startScreen.style.display = 'none';
+        gameOverScreen.style.display = 'none';
+        backToStartBtn.style.display = 'none';
+        Sound.sCodeGenerated();
+    }
+
+    // Copy code to clipboard
+    copyCodeBtn.addEventListener('click', () => {
+        const code = generatedCode.textContent;
+        navigator.clipboard.writeText(code).then(() => {
+            copySuccess.style.display = 'block';
+            setTimeout(() => {
+                copySuccess.style.display = 'none';
+            }, 2000);
+        }).catch(err => {
+            console.error('Failed to copy code: ', err);
+            // Fallback for older browsers
+            const textarea = document.createElement('textarea');
+            textarea.value = code;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            copySuccess.style.display = 'block';
+            setTimeout(() => {
+                copySuccess.style.display = 'none';
+            }, 2000);
+        });
+        Sound.sButton();
+    });
+
+    codeBackToMenuBtn.addEventListener('click', () => {
+        codeGenerationScreen.style.display = 'none';
+        startScreen.style.display = 'flex';
+        Sound.sButton();
+    });
+
+    // Road
+    const road = { width:0, x:0, lanes:3, markings:[], markingHeight:30, markingWidth:10, markingGap:40 };
+
+    // Vibration
+    let vibrationEnabled = true;
+
+    // Control positions
+    let controlPositions = {
+        leftBtn: { bottom: 100, left: 20 },
+        rightBtn: { bottom: 100, right: 20 },
+        forwardBtn: { bottom: 180, right: 20 },
+        backwardBtn: { bottom: 180, left: 20 }
+    };
+
+    // Default control positions
+    const defaultControlPositions = {
+        leftBtn: { bottom: 100, left: 20 },
+        rightBtn: { bottom: 100, right: 20 },
+        forwardBtn: { bottom: 180, right: 20 },
+        backwardBtn: { bottom: 180, left: 20 }
+    };
+
+    // Control size
+    let controlSize = 100;
+
+    // Control dragging state
+    let isAdjustingControls = false;
+
+    // Initialize road markings
+    function initRoadMarkings() {
+        road.markings = [];
+        for (let i=0;i<20;i++){
+            road.markings.push({
+                x: road.x + road.width/2 - road.markingWidth/2,
+                y: -road.markingHeight + i*(road.markingHeight+road.markingGap),
+                width: road.markingWidth, height: road.markingHeight
+            });
+        }
+    }
+
+    // Resize canvas
+    function resizeCanvas() {
+        const container = document.getElementById('gameContainer');
+        canvas.width = container.clientWidth;
+        canvas.height = container.clientHeight;
+
+        road.width = canvas.width * 0.7;
+        road.x = (canvas.width - road.width) / 2;
+        initRoadMarkings();
+
+        if (window.innerWidth >= 768) {
+            const aspectRatio = 500/800;
+            if (window.innerHeight * aspectRatio > window.innerWidth) {
+                canvas.width = window.innerWidth - 40;
+                canvas.height = canvas.width / aspectRatio;
+            } else {
+                canvas.height = window.innerHeight - 40;
+                canvas.width = canvas.height * aspectRatio;
+            }
+            road.width = canvas.width * 0.7;
+            road.x = (canvas.width - road.width) / 2;
+            initRoadMarkings();
+        }
+
+        // Update control positions
+        updateControlPositions();
+    }
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    // Update control positions based on saved values
+    function updateControlPositions() {
+        leftBtn.style.bottom = controlPositions.leftBtn.bottom + 'px';
+        leftBtn.style.left = controlPositions.leftBtn.left + 'px';
+
+        rightBtn.style.bottom = controlPositions.rightBtn.bottom + 'px';
+        rightBtn.style.right = controlPositions.rightBtn.right + 'px';
+
+        forwardBtn.style.bottom = controlPositions.forwardBtn.bottom + 'px';
+        forwardBtn.style.right = controlPositions.forwardBtn.right + 'px';
+
+        backwardBtn.style.bottom = controlPositions.backwardBtn.bottom + 'px';
+        backwardBtn.style.left = controlPositions.backwardBtn.left + 'px';
+    }
+
+    // Update control sizes
+    function updateControlSizes() {
+        const size = controlSize;
+        leftBtn.style.width = size + 'px';
+        leftBtn.style.height = size + 'px';
+        rightBtn.style.width = size + 'px';
+        rightBtn.style.height = size + 'px';
+        forwardBtn.style.width = size + 'px';
+        forwardBtn.style.height = size + 'px';
+        backwardBtn.style.width = size + 'px';
+        backwardBtn.style.height = size + 'px';
+    }
+
+    // Save control positions to localStorage
+    function saveControlPositions() {
+        localStorage.setItem('controlPositions', JSON.stringify(controlPositions));
+        localStorage.setItem('controlSize', controlSize);
+    }
+
+    // Load control positions from localStorage
+    function loadControlPositions() {
+        const saved = localStorage.getItem('controlPositions');
+        if (saved) {
+            controlPositions = JSON.parse(saved);
+            updateControlPositions();
+        }
+
+        const savedSize = localStorage.getItem('controlSize');
+        if (savedSize) {
+            controlSize = parseInt(savedSize);
+            controlSizeSlider.value = controlSize;
+            controlSizeValue.textContent = controlSize + '%';
+            updateControlSizes();
+        }
+    }
+
+    // Reset controls to default positions
+    function resetControlPositions() {
+        controlPositions = JSON.parse(JSON.stringify(defaultControlPositions));
+        controlSize = 100;
+        controlSizeSlider.value = controlSize;
+        controlSizeValue.textContent = controlSize + '%';
+        updateControlPositions();
+        updateControlSizes();
+        saveControlPositions();
+    }
+
+    // Make controls draggable
+    function makeDraggable(element, positionKey, isLeft = false) {
+        let isDragging = false;
+        let startX, startY;
+        let startLeft, startRight, startBottom;
+
+        element.addEventListener('mousedown', startDrag);
+        element.addEventListener('touchstart', startDrag);
+
+        function startDrag(e) {
+            if (!isAdjustingControls) return;
+
+            isDragging = true;
+            element.classList.add('dragging');
+
+            if (e.type === 'mousedown') {
+                startX = e.clientX;
+                startY = e.clientY;
+            } else {
+                startX = e.touches[0].clientX;
+                startY = e.touches[0].clientY;
+            }
+
+            // Get current position values
+            const computedStyle = window.getComputedStyle(element);
+            startBottom = parseInt(computedStyle.bottom) || 0;
+
+            if (isLeft) {
+                startLeft = parseInt(computedStyle.left) || 0;
+            } else {
+                startRight = parseInt(computedStyle.right) || 0;
+            }
+
+            e.preventDefault();
+        }
+
+        document.addEventListener('mousemove', drag);
+        document.addEventListener('touchmove', drag);
+
+        function drag(e) {
+            if (!isDragging) return;
+
+            let currentX, currentY;
+            if (e.type === 'mousemove') {
+                currentX = e.clientX;
+                currentY = e.clientY;
+            } else {
+                currentX = e.touches[0].clientX;
+                currentY = e.touches[0].clientY;
+            }
+
+            const deltaX = currentX - startX;
+            const deltaY = startY - currentY; // Inverted for bottom positioning
+
+            const newBottom = startBottom + deltaY;
+
+            if (isLeft) {
+                const newLeft = startLeft + deltaX;
+                element.style.left = newLeft + 'px';
+                element.style.right = '';
+                controlPositions[positionKey].left = newLeft;
+                controlPositions[positionKey].right = undefined;
+            } else {
+                const newRight = startRight - deltaX;
+                element.style.right = newRight + 'px';
+                element.style.left = '';
+                controlPositions[positionKey].right = newRight;
+                controlPositions[positionKey].left = undefined;
+            }
+
+            element.style.bottom = newBottom + 'px';
+            controlPositions[positionKey].bottom = newBottom;
+
+            e.preventDefault();
+        }
+
+        document.addEventListener('mouseup', stopDrag);
+        document.addEventListener('touchend', stopDrag);
+
+        function stopDrag() {
+            if (isDragging) {
+                isDragging = false;
+                element.classList.remove('dragging');
+                saveControlPositions();
+            }
+        }
+    }
+
+    // Initialize draggable controls
+    makeDraggable(leftBtn, 'leftBtn', true);
+    makeDraggable(rightBtn, 'rightBtn', false);
+    makeDraggable(forwardBtn, 'forwardBtn', false);
+    makeDraggable(backwardBtn, 'backwardBtn', true);
+
+    // Show adjust controls screen
+    function showAdjustControlsScreen() {
+        settingsScreen.style.display = 'none';
+        adjustControlsScreen.style.display = 'flex';
+        isAdjustingControls = true;
+
+        // Move control buttons to the adjustment grid
+        adjustControlsGrid.appendChild(leftBtn);
+        adjustControlsGrid.appendChild(rightBtn);
+        adjustControlsGrid.appendChild(forwardBtn);
+        adjustControlsGrid.appendChild(backwardBtn);
+
+        // Set initial positions within the grid
+        leftBtn.style.position = 'absolute';
+        rightBtn.style.position = 'absolute';
+        forwardBtn.style.position = 'absolute';
+        backwardBtn.style.position = 'absolute';
+
+        updateControlPositions();
+    }
+
+    // Hide adjust controls screen
+    function hideAdjustControlsScreen() {
+        adjustControlsScreen.style.display = 'none';
+        settingsScreen.style.display = 'flex';
+        isAdjustingControls = false;
+
+        // Move control buttons back to the game container
+        const gameContainer = document.getElementById('gameContainer');
+        gameContainer.appendChild(leftBtn);
+        gameContainer.appendChild(rightBtn);
+        gameContainer.appendChild(forwardBtn);
+        gameContainer.appendChild(backwardBtn);
+
+        // Reset positioning
+        leftBtn.style.position = 'absolute';
+        rightBtn.style.position = 'absolute';
+        forwardBtn.style.position = 'absolute';
+        backwardBtn.style.position = 'absolute';
+
+        updateControlPositions();
+    }
+
+    // Game state
+    let savedState = null;
+
+    let gameRunning = false;
+    let distance = 0;
+    let hitCount = 0;
+    let gameTime = 0;
+    let isMobile = /Mobi|Android/i.test(navigator.userAgent);
+    let lastZombieHitTime = 0;
+    let zombieSpeedMultiplier = 1;
+    let speedIncreaseTimer = 0;
+    let lastFrameTime = 0;
+    let countdownActive = false;
+
+    // Player
+    const player = {
+        x: canvas.width/2, y: canvas.height - 100,
+        width: 60, height: 100,
+        baseSpeed: 3, currentSpeed: 3,
+        baseForwardSpeed: 2, currentForwardSpeed: 2, maxSpeed: 10,
+        color:"#3498db", gunColor:"#e74c3c",
+        movingLeft:false, movingRight:false, movingForward:false, movingBackward:false,
+        lastShot:0, shootDelay:240
+    };
+
+    // Bullets
+    const bullets = [];
+    const bulletSpeed = 6, bulletWidth = 5, bulletHeight = 15;
+
+    // Zombies
+    const zombies = [];
+    const zombieWidth = 40, zombieHeight = 60;
+    let zombieSpawnRate = 250, zombieSpawnCounter = 0;
+
+    // Explosions / Damage
+    const explosions = [];
+    const damageEffects = [];
+
+    /* GAME LOOP */
+    function gameLoop(timestamp){
+        if (!gameRunning) return;
+
+        // Check network status in game loop
+        if (!navigator.onLine) {
+            handleNetworkLoss();
+            return;
+        }
+
+        const deltaTime = lastFrameTime ? (timestamp - lastFrameTime) : 0;
+        lastFrameTime = timestamp;
+
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+
+        // If countdown is active, don't update game elements
+        if (countdownActive) {
+            updateRoad(); drawRoad();
+            updatePlayer(); drawPlayer();
+            requestAnimationFrame(gameLoop);
+            return;
+        }
+
+        gameTime++;
+        speedIncreaseTimer++;
+
+        distance += player.currentForwardSpeed * 0.01;
+        distanceSpan.textContent = distance.toFixed(2);
+
+        // Update speed indicator (number only)
+        speedValue.textContent = Math.round(player.currentForwardSpeed * 10);
+
+        // Update health bar
+        healthFill.style.width = `${(1 - hitCount/3) * 100}%`;
+
+        // Auto-fire
+        if (gameTime % 8 === 0) { fireBullet(); }
+
+        // Speed ramp
+        if (speedIncreaseTimer % 500 === 0 && player.currentForwardSpeed < player.maxSpeed) {
+            player.currentForwardSpeed = Math.min(player.maxSpeed, player.currentForwardSpeed + 0.3);
+            player.currentSpeed = Math.min(player.maxSpeed, player.currentSpeed + 0.2);
+            Sound.sSpeedUp();
+        }
+
+        // Make zombies spawn faster as speed increases
+        zombieSpawnRate = Math.max(50, 250 - Math.floor(player.currentForwardSpeed * 12));
+
+        // Random mid attacks
+        if (Math.random() < 0.002 * player.currentForwardSpeed) {
+            zombies.push({
+                x: road.x + 20 + Math.random()*(road.width - 40 - zombieWidth),
+                y: -zombieHeight,
+                width: zombieWidth, height: zombieHeight,
+                speedX: 0,
+                speedY: (0.3 + Math.random()*0.5) * zombieSpeedMultiplier,
+                health: 1, points: 10, baseSpeed: 0.5, isAngry: false, angerTimer: 0
+            });
+        }
+
+        // Angry decay
+        if (timestamp - lastZombieHitTime > 3000) { zombieSpeedMultiplier = Math.max(1, zombieSpeedMultiplier - 0.01); }
+
+        // Update/draw
+        updateRoad(); drawRoad();
+        updatePlayer(); drawPlayer();
+        updateBullets(); drawBullets();
+        spawnZombies(); updateZombies(); drawZombies();
+        updateExplosions(); drawExplosions();
+        updateDamageEffects(); drawDamageEffects();
+        checkCollisions();
+
+        // Difficulty
+        if (gameTime % 2000 === 0) {
+            zombieSpawnRate = Math.max(150, zombieSpawnRate - 5);
+        }
+
+        requestAnimationFrame(gameLoop);
+    }
+
+    /* ROAD */
+    function updateRoad(){
+        const moveSpeed = countdownActive ? 0 : player.currentForwardSpeed;
+        for (let i=0;i<road.markings.length;i++){
+            road.markings[i].y += moveSpeed;
+            if (road.markings[i].y > canvas.height) road.markings[i].y = -road.markingHeight;
+        }
+    }
+    function drawRoad(){
+        ctx.fillStyle = "#333"; ctx.fillRect(road.x,0,road.width,canvas.height);
+        ctx.fillStyle = "#555"; ctx.fillRect(road.x-20,0,20,canvas.height); ctx.fillRect(road.x+road.width,0,20,canvas.height);
+        ctx.fillStyle = "#fff";
+        for (let i=0;i<road.markings.length;i++){
+            const m = road.markings[i]; ctx.fillRect(m.x,m.y,m.width,m.height);
+        }
+        ctx.fillStyle = "#2ecc71";
+        ctx.fillRect(0,0,road.x-20,canvas.height);
+        ctx.fillRect(road.x+road.width+20,0,canvas.width-(road.x+road.width+20),canvas.height);
+    }
+
+    /* PLAYER */
+    function updatePlayer(){
+        if (countdownActive) return;
+
+        if (player.movingLeft && player.x > road.x + 20) player.x -= player.currentSpeed;
+        if (player.movingRight && player.x < road.x + road.width - player.width - 20) player.x += player.currentSpeed;
+        if (player.movingForward && player.y > canvas.height/2) player.y -= player.currentForwardSpeed;
+        if (player.movingBackward && player.y < canvas.height - 50) player.y += player.currentForwardSpeed;
+    }
+    function drawPlayer(){
+        ctx.fillStyle = player.color; ctx.fillRect(player.x, player.y, player.width, player.height);
+        ctx.fillStyle = "#000";
+        ctx.fillRect(player.x+5, player.y+10, player.width-10, 15);
+        ctx.fillRect(player.x+5, player.y+player.height-25, player.width-10, 15);
+        ctx.fillRect(player.x-5, player.y+15, 10,20); ctx.fillRect(player.x+player.width-5, player.y+15, 10,20);
+        ctx.fillRect(player.x-5, player.y+player.height-35, 10,20); ctx.fillRect(player.x+player.width-5, player.y+player.height-35, 10,20);
+        ctx.fillStyle = player.gunColor; ctx.fillRect(player.x + player.width/2 - 5, player.y - 20, 10, 20);
+
+        if (player.currentForwardSpeed > 8 && !countdownActive){
+            ctx.strokeStyle = "rgba(255,255,255,.3)"; ctx.lineWidth = 2;
+            for (let i=0;i<10;i++){
+                const x = Math.random()*canvas.width, y = Math.random()*canvas.height, len = 10 + Math.random()*20;
+                ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x,y+len); ctx.stroke();
+            }
+        }
+    }
+
+    /* BULLETS */
+    function fireBullet(){
+        if (countdownActive) return;
+
+        const now = Date.now();
+        if (now - player.lastShot < player.shootDelay) return;
+        player.lastShot = now;
+
+        bullets.push({ x: player.x + player.width/2 - bulletWidth/2, y: player.y - bulletHeight, width: bulletWidth, height: bulletHeight, speed: bulletSpeed, damage:10 });
+
+        if (isMobile && navigator.vibrate && vibrationEnabled) navigator.vibrate(50);
+        Sound.sShoot();
+    }
+    function updateBullets(){
+        for (let i = bullets.length-1; i>=0; i--){
+            bullets[i].y -= bullets[i].speed;
+            if (bullets[i].y + bullets[i].height < 0) bullets.splice(i,1);
+        }
+    }
+    function drawBullets(){
+        ctx.fillStyle = "#f1c40f";
+        for (let i=0;i<bullets.length;i++){
+            const b = bullets[i]; ctx.fillRect(b.x,b.y,b.width,b.height);
+        }
+    }
+
+    /* ZOMBIES */
+    function spawnZombies(){
+        if (countdownActive) return;
+
+        zombieSpawnCounter++;
+        if (zombieSpawnCounter >= zombieSpawnRate){
+            let x,y; const side = Math.floor(Math.random()*4);
+
+            if (side === 0){
+                x = road.x + 20 + Math.random()*(road.width - 40 - zombieWidth);
+                y = -zombieHeight;
+            } else if (side === 1){
+                x = -zombieWidth;
+                y = Math.random()*canvas.height/2;
+            } else if (side === 2) {
+                x = canvas.width;
+                y = Math.random()*canvas.height/2;
+            } else {
+                x = road.x + 20 + Math.random()*(road.width - 40 - zombieWidth);
+                y = -zombieHeight;
+            }
+
+            let speedMultiplier = 0.7;
+            if (side === 1 || side === 2) {
+                speedMultiplier = 0.5;
+            }
+
+            zombies.push({
+                x,y,width:zombieWidth,height:zombieHeight,
+                speedX: side===1 ? (0.5+Math.random()*0.5)*zombieSpeedMultiplier*speedMultiplier :
+                       side===2 ? (-0.5 - Math.random()*0.5)*zombieSpeedMultiplier*speedMultiplier : 0,
+                speedY: (0.8 + Math.random()*1.5) * zombieSpeedMultiplier * speedMultiplier,
+                health:1, points:5, baseSpeed: 0.8 + Math.random()*1.5, isAngry:false, angerTimer:0
+            });
+            zombieSpawnCounter = 0;
+        }
+    }
+    function updateZombies(){
+        for (let i=zombies.length-1;i>=0;i--){
+            const z = zombies[i];
+            if (z.isAngry){
+                z.angerTimer--;
+                if (z.angerTimer<=0){
+                    z.isAngry=false;
+                    z.speedX = z.baseSpeed * (z.speedX>0?1:-1);
+                    z.speedY = z.baseSpeed;
+                }
+            }
+            z.x += z.speedX; z.y += z.speedY;
+            if (z.y > canvas.height+100 || z.x < -100 || z.x > canvas.width+100) zombies.splice(i,1);
+        }
+    }
+    function drawZombies(){
+        for (let i=0;i<zombies.length;i++){
+            const z = zombies[i];
+            ctx.fillStyle = z.isAngry ? "#ff0000" : "#27ae60"; ctx.fillRect(z.x, z.y, z.width, z.height);
+            ctx.fillStyle = z.isAngry ? "#ff6666" : "#2ecc71";
+            ctx.beginPath(); ctx.arc(z.x+z.width/2, z.y+z.height/4, z.width/3, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = "#000";
+            ctx.beginPath(); ctx.arc(z.x+z.width/3, z.y+z.height/4, 3, 0, Math.PI*2);
+            ctx.arc(z.x+z.width*2/3, z.y+z.height/4, 3, 0, Math.PI*2); ctx.fill();
+            ctx.strokeStyle="#000"; ctx.lineWidth=2; ctx.beginPath();
+            ctx.arc(z.x+z.width/2, z.y+z.height/3, 5, 0, Math.PI); ctx.stroke();
+        }
+    }
+
+    /* ANGER NEARBY */
+    function angerNearbyZombies(x,y){
+        const angerRadius = 150, angerDuration = 100;
+        for (let i=0;i<zombies.length;i++){
+            const z = zombies[i];
+            const d = Math.hypot(z.x+z.width/2 - x, z.y+z.height/2 - y);
+            if (d < angerRadius){
+                z.isAngry = true; z.angerTimer = angerDuration;
+                const dx = player.x + player.width/2 - (z.x + z.width/2);
+                const dy = player.y + player.height/2 - (z.y + z.height/2);
+                const angle = Math.atan2(dy, dx);
+                const speedBoost = 2.5;
+                z.speedX = Math.cos(angle) * z.baseSpeed * speedBoost;
+                z.speedY = Math.sin(angle) * z.baseSpeed * speedBoost;
+            }
+        }
+        Sound.sAngryZombie();
+    }
+
+    /* EXPLOSIONS */
+    function createExplosion(x,y,size){
+        explosions.push({ x,y,size,particles:[],life:30 });
+        for (let i=0;i<15;i++){
+            explosions[explosions.length-1].particles.push({
+                x:0,y:0,radius:2+Math.random()*3,color:["#f1c40f","#e74c3c","#f39c12"][Math.floor(Math.random()*3)],
+                speed:1+Math.random()*3,angle:Math.random()*Math.PI*2,life:30+Math.random()*20
+            });
+        }
+        if (isMobile && navigator.vibrate && vibrationEnabled) navigator.vibrate(100);
+        Sound.sExplosion();
+    }
+    function updateExplosions(){
+        for (let i=explosions.length-1;i>=0;i--){
+            explosions[i].life--;
+            if (explosions[i].life<=0) explosions.splice(i,1);
+        }
+    }
+    function drawExplosions(){
+        for (let i=0;i<explosions.length;i++){
+            const e = explosions[i]; const progress = 1 - (e.life/30);
+            for (let j=0;j<e.particles.length;j++){
+                const p = e.particles[j];
+                const dist = p.speed * progress * 30;
+                const px = e.x + Math.cos(p.angle)*dist;
+                const py = e.y + Math.sin(p.angle)*dist;
+                const alpha = 1 - progress;
+                ctx.globalAlpha = alpha; ctx.fillStyle = p.color; ctx.beginPath();
+                ctx.arc(px,py,p.radius,0,Math.PI*2); ctx.fill(); ctx.globalAlpha = 1;
+            }
+        }
+    }
+
+    /* DAMAGE */
+    function createDamageEffect(x,y){
+        damageEffects.push({x,y,radius:30,alpha:1,life:30});
+        if (isMobile && navigator.vibrate && vibrationEnabled) navigator.vibrate(200);
+        Sound.sHit();
+    }
+    function updateDamageEffects(){
+        for (let i=damageEffects.length-1;i>=0;i--){
+            const d = damageEffects[i];
+            d.life--; d.alpha = d.life/30; d.radius -= 0.5;
+            if (d.life<=0) damageEffects.splice(i,1);
+        }
+    }
+    function drawDamageEffects(){
+        for (let i=0;i<damageEffects.length;i++){
+            const e = damageEffects[i];
+            ctx.globalAlpha = e.alpha; ctx.strokeStyle="#e74c3c"; ctx.lineWidth=3;
+            ctx.beginPath(); ctx.arc(e.x, e.y, e.radius, 0, Math.PI*2); ctx.stroke(); ctx.globalAlpha = 1;
+        }
+    }
+
+    /* COLLISIONS */
+    function checkCollisions(){
+        if (countdownActive) return;
+
+        // bullet-zombie
+        for (let i=bullets.length-1;i>=0;i--){
+            for (let j=zombies.length-1;j>=0;j--){
+                if (checkCollision(bullets[i], zombies[j])){
+                    bullets.splice(i,1);
+                    const zx = zombies[j].x + zombies[j].width/2;
+                    const zy = zombies[j].y + zombies[j].height/2;
+
+                    angerNearbyZombies(zx, zy);
+                    lastZombieHitTime = performance.now();
+                    zombieSpeedMultiplier = 1.5;
+
+                    zombies.splice(j,1);
+                    
+                    // Add to total score only
+                    totalScore += 5; 
+                    saveTotalScore();
+                    
+                    // Check if total score reached 80,000 and code not generated yet
+                    if (totalScore >= TOTAL_SCORE_GOAL && !codeGeneratedForThisMilestone) {
+                        showCodeGenerationScreen();
+                    }
+                    
+                    createExplosion(zx, zy, 20);
+                    break;
+                }
+            }
+        }
+        // player-zombie
+        for (let i=zombies.length-1;i>=0;i--){
+            if (checkCollision(player, zombies[i])){
+                hitCount++; createDamageEffect(zombies[i].x + zombies[i].width/2, zombies[i].y + zombies[i].height/2);
+                zombies.splice(i,1);
+                if (hitCount >= 3){
+                    createExplosion(player.x + player.width/2, player.y + player.height/2, 50);
+                    gameOver(); return;
+                }
+            }
+        }
+    }
+    function checkCollision(a,b){
+        return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
+    }
+
+    /* GAME CONTROL */
+    function startGame(){
+        // Check network before starting
+        if (!navigator.onLine) {
+            handleNetworkLoss();
+            return;
+        }
+
+        // Hide all screens and show game elements
+        startScreen.style.display = "none";
+        gameOverScreen.style.display = "none";
+        codeGenerationScreen.style.display = "none";
+        settingsScreen.style.display = "none";
+        adjustControlsScreen.style.display = "none";
+        networkErrorScreen.style.display = "none";
+        backToStartBtn.style.display = "flex";
+
+        // Reset game state (but keep total score)
+        distance = 0; hitCount = 0;
+        distanceSpan.textContent = "0.00";
+
+        player.currentSpeed = player.baseSpeed;
+        player.currentForwardSpeed = player.baseForwardSpeed;
+
+        bullets.length = 0; zombies.length = 0; explosions.length = 0; damageEffects.length = 0;
+        zombieSpawnCounter = 0; gameTime = 0; speedIncreaseTimer = 0; zombieSpeedMultiplier = 1; lastZombieHitTime = 0; lastFrameTime = 0;
+
+        player.x = canvas.width/2 - player.width/2;
+        player.y = canvas.height - 100;
+
+        // Update health bar
+        healthFill.style.width = "100%";
+
+        // Start countdown
+        startCountdown();
+    }
+
+    function startCountdown() {
+        countdownActive = true;
+        gameRunning = true;
+
+        // Show countdown
+        countdownElement.style.display = 'block';
+
+        let count = 3;
+        countdownElement.textContent = count;
+        Sound.sCountdown();
+
+        const countdownInterval = setInterval(() => {
+            count--;
+            if (count > 0) {
+                countdownElement.textContent = count;
+                Sound.sCountdown();
+            } else {
+                clearInterval(countdownInterval);
+                countdownElement.style.display = 'none';
+
+                // Start the actual game
+                Sound.resume();
+                Sound.setMasterMute(false);
+                Sound.sStart();
+
+                // End countdown and start full gameplay
+                countdownActive = false;
+                requestAnimationFrame(gameLoop);
+            }
+        }, 1000);
+
+        // Start the game loop (for rendering during countdown)
+        requestAnimationFrame(gameLoop);
+    }
+
+    function gameOver(){
+        // Save current state for resume
+        savedState = {
+            distance: distance,
+            hitCount: hitCount,
+            playerX: player.x,
+            playerY: player.y,
+            playerSpeed: player.currentSpeed,
+            playerForwardSpeed: player.currentForwardSpeed,
+            zombieSpawnRate: zombieSpawnRate,
+            zombieSpeedMultiplier: zombieSpeedMultiplier,
+            shootDelay: player.shootDelay,
+            lastShot: player.lastShot
+        };
+
+        gameRunning = false;
+        countdownActive = false;
+        finalTotalScore.textContent = totalScore.toLocaleString();
+        finalDistanceDisplay.textContent = distance.toFixed(2);
+        gameOverScreen.style.display = "flex";
+        backToStartBtn.style.display = "none";
+        Sound.sGameOver();
+
+        // ✅ Every time Game Over → show Ad
+        if (typeof Android !== "undefined" && Android.showRewardAd) {
+            Android.showRewardAd();
+        } else {
+            console.log("Reward Ad not available on this platform.");
+        }
+    }
+
+    function backToStart(){
+        gameRunning = false;
+        countdownActive = false;
+        startScreen.style.display = "flex";
+        gameOverScreen.style.display = "none";
+        codeGenerationScreen.style.display = "none";
+        settingsScreen.style.display = "none";
+        adjustControlsScreen.style.display = "none";
+        networkErrorScreen.style.display = "none";
+        backToStartBtn.style.display = "none";
+        
+        // Update start screen total score
+        startTotalScore.textContent = totalScore.toLocaleString();
+    }
+    
+    function showSettings(){
+        startScreen.style.display = 'none';
+        settingsScreen.style.display = 'flex';
+        isAdjustingControls = false;
+    }
+    
+    function hideSettings(){
+        settingsScreen.style.display = 'none';
+        startScreen.style.display = 'flex';
+    }
+
+    /* VIBRATION TOGGLE */
+    function setVibration(enabled){
+        vibrationEnabled = enabled;
+        if (enabled){ vibrateOnBtn.classList.add('active'); vibrateOffBtn.classList.remove('active'); }
+        else { vibrateOnBtn.classList.remove('active'); vibrateOffBtn.classList.add('active'); }
+    }
+
+    /* SOUND UI TOGGLES */
+    function activate(btnOn, btnOff, flag){
+        if(flag){ btnOn.classList.add('active'); btnOff.classList.remove('active'); }
+        else { btnOn.classList.remove('active'); btnOff.classList.add('active'); }
+    }
+    function toggleMasterIcon(muted){
+        const soundIcon = document.querySelector('#soundToggleBtn img');
+        if (muted) {
+            soundIcon.src = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0id2hpdGUiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCI+PHBhdGggZD0iTTMgOXY2aDRsNSA1VjRMNyA5SDN6bTEzLjUgM2MwLTEuNzctMS4wMi0zLjI5LTIuNS00LjAzdjguMDUgYzEuNDgtLjczIDIuNS0yLjI1IDIuNS00LjAyek0xNCAzLjIzdjIuMDZjMi44OS44NiA1IDMuNTQgNSA2Ljcxcy0yLjExIDUuODUtNSA2LjcxdjIuMDZjNC4wMS0uOTEgNy00LjQ5IDctOC43N3MtMi45OS03Ljg2LTctOC43N3oiLz48L3N2Zz4=";
+        } else {
+            soundIcon.src = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0id2hpdGUiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCI+PHBhdGggZD0iTTMgOXY2aDRsNSA1VjRMNyA5SDN6bTEzLjUgM2MwLTEuNzctMS4yLTcuMjktMi41LTQuMDN2OC4wNSBjMS40OC0uNzMgMi41LTIuMjUgMi41LTQuMDJ6TTE0IDMuMjN2Mi4wNmMyLjg5Ljg2IDUgMy41NCA1IDYuNzFzLTIuMTEgNS44NS01IDYuNzF2Mi4wNmM0LjAxLS45MSA3LTQuNDkgNy04Ljc3cy0yLjk5LTcuODYtNy04Ljc3eiIvPjwvc3ZnPg==";
+        }
+    }
+
+    // ===== Ensure first click/touch is recognized =====
+    let firstInputHandled = false;
+    function handleFirstInput(e){
+        if (firstInputHandled) return;
+        firstInputHandled = true;
+        try { Sound.resume(); } catch(err) { /* ignore */ }
+        document.removeEventListener('pointerdown', handleFirstInput, true);
+        document.removeEventListener('touchstart', handleFirstInput, true);
+        document.removeEventListener('click', handleFirstInput, true);
+    }
+    document.addEventListener('pointerdown', handleFirstInput, {capture:true, passive:true});
+    document.addEventListener('touchstart', handleFirstInput, {capture:true, passive:true});
+    document.addEventListener('click', handleFirstInput, {capture:true, passive:true});
+
+    /* EVENTS */
+    startBtn.addEventListener('click', ()=>{ Sound.sButton(); startGame(); });
+    settingsBtn.addEventListener('click', ()=>{ Sound.sButton(); showSettings(); });
+    backToMainBtn.addEventListener('click', ()=>{ Sound.sButton(); hideSettings(); });
+    restartBtn.addEventListener('click', ()=>{ Sound.sButton(); startGame(); });
+    backToMenuBtn.addEventListener('click', ()=>{ Sound.sButton(); backToStart(); });
+    backToStartBtn.addEventListener('click', ()=>{ Sound.sButton(); backToStart(); });
+    adjustControlsBtn.addEventListener('click', ()=>{ Sound.sButton(); showAdjustControlsScreen(); });
+    saveControlsBtn.addEventListener('click', ()=>{ Sound.sButton(); hideAdjustControlsScreen(); });
+    resetControlsBtn.addEventListener('click', ()=>{ Sound.sButton(); resetControlPositions(); });
+
+    // Vibration
+    vibrateOnBtn.addEventListener('click', ()=>{ Sound.sButton(); setVibration(true); });
+    vibrateOffBtn.addEventListener('click', ()=>{ Sound.sButton(); setVibration(false); });
+
+    // Sound toggles
+    let masterMuted = false;
+    soundOnBtn.addEventListener('click', ()=>{ Sound.resume(); Sound.setSfxEnabled(true); activate(soundOnBtn, soundOffBtn, true); Sound.sButton(); });
+    soundOffBtn.addEventListener('click', ()=>{ Sound.setSfxEnabled(false); activate(soundOnBtn, soundOffBtn, false); });
+
+    soundToggleBtn.addEventListener('click', ()=>{
+        masterMuted = !masterMuted;
+        Sound.setMasterMute(masterMuted);
+        toggleMasterIcon(masterMuted);
+        if(!masterMuted) { Sound.resume(); Sound.sButton(); }
+    });
+
+    // Control size slider
+    controlSizeSlider.addEventListener('input', ()=>{
+        controlSize = parseInt(controlSizeSlider.value);
+        controlSizeValue.textContent = controlSize + '%';
+        updateControlSizes();
+        saveControlPositions();
+    });
+
+    // Touch controls
+    leftBtn.addEventListener('touchstart', e=>{ e.preventDefault(); player.movingLeft = true; }, {passive:false});
+    leftBtn.addEventListener('touchend', e=>{ e.preventDefault(); player.movingLeft = false; }, {passive:false});
+    rightBtn.addEventListener('touchstart', e=>{ e.preventDefault(); player.movingRight = true; }, {passive:false});
+    rightBtn.addEventListener('touchend', e=>{ e.preventDefault(); player.movingRight = false; }, {passive:false});
+    forwardBtn.addEventListener('touchstart', e=>{ e.preventDefault(); player.movingForward = true; }, {passive:false});
+    forwardBtn.addEventListener('touchend', e=>{ e.preventDefault(); player.movingForward = false; }, {passive:false});
+    backwardBtn.addEventListener('touchstart', e=>{ e.preventDefault(); player.movingBackward = true; }, {passive:false});
+    backwardBtn.addEventListener('touchend', e=>{ e.preventDefault(); player.movingBackward = false; }, {passive:false});
+
+    // Mouse (PC)
+    leftBtn.addEventListener('mousedown', ()=>{ player.movingLeft = true; });
+    leftBtn.addEventListener('mouseup', ()=>{ player.movingLeft = false; });
+    leftBtn.addEventListener('mouseleave', ()=>{ player.movingLeft = false; });
+    rightBtn.addEventListener('mousedown', ()=>{ player.movingRight = true; });
+    rightBtn.addEventListener('mouseup', ()=>{ player.movingRight = false; });
+    rightBtn.addEventListener('mouseleave', ()=>{ player.movingRight = false; });
+    forwardBtn.addEventListener('mousedown', ()=>{ player.movingForward = true; });
+    forwardBtn.addEventListener('mouseup', ()=>{ player.movingForward = false; });
+    forwardBtn.addEventListener('mouseleave', ()=>{ player.movingForward = false; });
+    backwardBtn.addEventListener('mousedown', ()=>{ player.movingBackward = true; });
+    backwardBtn.addEventListener('mouseup', ()=>{ player.movingBackward = false; });
+    backwardBtn.addEventListener('mouseleave', ()=>{ player.movingBackward = false; });
+
+    // Keyboard
+    document.addEventListener('keydown', (e)=>{
+        if (!gameRunning || countdownActive) return;
+        if (e.key === 'ArrowLeft' || e.key === 'a') player.movingLeft = true;
+        else if (e.key === 'ArrowRight' || e.key === 'd') player.movingRight = true;
+        else if (e.key === 'ArrowUp' || e.key === 'w') player.movingForward = true;
+        else if (e.key === 'ArrowDown' || e.key === 's') player.movingBackward = true;
+    });
+    document.addEventListener('keyup', (e)=>{
+        if (e.key === 'ArrowLeft' || e.key === 'a') player.movingLeft = false;
+        else if (e.key === 'ArrowRight' || e.key === 'd') player.movingRight = false;
+        else if (e.key === 'ArrowUp' || e.key === 'w') player.movingForward = false;
+        else if (e.key === 'ArrowDown' || e.key === 's') player.movingBackward = false;
+    });
+
+    // Layout on PC
+    window.addEventListener('load', ()=>{
+        resizeCanvas();
+        loadControlPositions();
+        loadTotalScore();
+        updateNetworkStatus(navigator.onLine);
+
+        if (window.innerWidth >= 768){
+            document.body.style.display='flex';
+            document.body.style.justifyContent='center';
+            document.body.style.alignItems='center';
+        }
+        // Set initial icons/state
+        toggleMasterIcon(false);
+        activate(soundOnBtn, soundOffBtn, true);
+    });
+
+    // Clean up interval on page unload
+    window.addEventListener('beforeunload', () => {
+        if (networkCheckInterval) {
+            clearInterval(networkCheckInterval);
+        }
+    });
+</script>
+</body>
+</html>
