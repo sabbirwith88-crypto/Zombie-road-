@@ -15,6 +15,7 @@
             color:#fff;z-index:30;text-align:center;padding:20px}
         #gameOverScreen,#settingsScreen,#adjustControlsScreen,#codeGenerationScreen,#networkErrorScreen{display:none}
         
+        /* Network Error Screen */
         #networkErrorScreen {
             background: linear-gradient(135deg, #c0392b 0%, #e74c3c 100%);
             z-index: 100;
@@ -368,6 +369,14 @@
             color: #f1c40f;
             font-size: 1.2rem;
         }
+        .reset-badge {
+            background: #e74c3c;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            margin-top: 10px;
+        }
         @media (hover:none){
             .btn{padding:15px 30px;font-size:18px}
             .toggle-btn{padding:12px 25px;font-size:16px}
@@ -410,7 +419,7 @@
 
     <div id="countdown">3</div>
 
-    <div id="totalScoreDisplay">🏆 <span id="totalScore">0</span></div>
+    <div id="totalScoreDisplay">🏆 <span id="totalScore">0</span> <span class="reset-badge" id="targetDisplay">/80,000</span></div>
     <div class="total-score-progress">
         <div id="totalProgressFill"></div>
     </div>
@@ -440,7 +449,7 @@
         <div style="background:rgba(241,196,15,0.2); padding:15px; border-radius:10px; margin:20px 0;">
             <h2 style="color:#f1c40f;">Current Total Score</h2>
             <div style="font-size:3rem; color:#fff;" id="startTotalScore">0</div>
-            <div style="margin-top:10px;">Target: 80,000 to unlock reward!</div>
+            <div style="margin-top:10px; color:#e74c3c; font-weight:bold;">Target: 80,000 to unlock reward and reset!</div>
         </div>
         <button class="btn" id="startBtn">🚗 Start Game</button>
         <button class="btn" id="settingsBtn">⚙️ Settings</button>
@@ -487,7 +496,9 @@
             <div id="copySuccess" class="copy-success" style="display: none;">✅ Code copied to clipboard!</div>
         </div>
         <p class="settings-hint">Save this code to redeem your reward!</p>
-        <button class="btn" id="codeBackToMenuBtn">🔙 Back to Menu</button>
+        <p style="color: #e74c3c; margin: 10px 0;">⚠️ Game will reset completely after you choose an option</p>
+        <button class="btn" id="codeBackToMenuBtn">🔙 Back to Menu (Reset)</button>
+        <button class="btn" id="codePlayAgainBtn">🎮 Play Again (Reset)</button>
     </div>
 
     <div id="gameOverScreen">
@@ -879,7 +890,7 @@
     });
 
     /* =======================
-       GAME LOGIC
+       GAME LOGIC - 80,000 SCORE RESET SYSTEM
        ======================= */
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
@@ -922,15 +933,17 @@
     const copyCodeBtn = document.getElementById('copyCodeBtn');
     const copySuccess = document.getElementById('copySuccess');
     const codeBackToMenuBtn = document.getElementById('codeBackToMenuBtn');
+    const codePlayAgainBtn = document.getElementById('codePlayAgainBtn');
+    const targetDisplay = document.getElementById('targetDisplay');
 
-    // Total Score System
+    // Total Score System - 80,000 target
     let totalScore = 0;
-    const TOTAL_SCORE_GOAL = 80000;
+    const TOTAL_SCORE_GOAL = 80000; // 80,000 target
     let generatedCodes = [];
     let codeGeneratedForThisMilestone = false;
 
     function loadTotalScore() {
-        const saved = localStorage.getItem('zombieTotalScoreOnly');
+        const saved = localStorage.getItem('zombieTotalScore80000');
         if (saved) {
             totalScore = parseInt(saved);
             totalScoreSpan.textContent = totalScore.toLocaleString();
@@ -938,19 +951,19 @@
             updateTotalProgress();
         }
         
-        const savedCodes = localStorage.getItem('zombieGeneratedCodesOnly');
+        const savedCodes = localStorage.getItem('zombieGeneratedCodes80000');
         if (savedCodes) {
             generatedCodes = JSON.parse(savedCodes);
         }
         
-        const milestoneReached = localStorage.getItem('zombieMilestoneReached');
+        const milestoneReached = localStorage.getItem('zombieMilestone80000');
         if (milestoneReached === 'true' && totalScore >= TOTAL_SCORE_GOAL) {
             codeGeneratedForThisMilestone = true;
         }
     }
 
     function saveTotalScore() {
-        localStorage.setItem('zombieTotalScoreOnly', totalScore);
+        localStorage.setItem('zombieTotalScore80000', totalScore);
         totalScoreSpan.textContent = totalScore.toLocaleString();
         startTotalScore.textContent = totalScore.toLocaleString();
         updateTotalProgress();
@@ -976,10 +989,42 @@
         }
         
         generatedCodes.push(code);
-        localStorage.setItem('zombieGeneratedCodesOnly', JSON.stringify(generatedCodes));
-        localStorage.setItem('zombieMilestoneReached', 'true');
-        codeGeneratedForThisMilestone = true;
+        localStorage.setItem('zombieGeneratedCodes80000', JSON.stringify(generatedCodes));
         return code;
+    }
+
+    // Full Reset - everything becomes 0
+    function fullResetGame() {
+        // Reset total score to 0
+        totalScore = 0;
+        codeGeneratedForThisMilestone = false;
+        localStorage.setItem('zombieTotalScore80000', '0');
+        localStorage.removeItem('zombieMilestone80000');
+        
+        // Reset game state
+        distance = 0;
+        hitCount = 0;
+        player.currentSpeed = player.baseSpeed;
+        player.currentForwardSpeed = player.baseForwardSpeed;
+        player.x = canvas.width/2 - player.width/2;
+        player.y = canvas.height - 100;
+        bullets.length = 0;
+        zombies.length = 0;
+        explosions.length = 0;
+        damageEffects.length = 0;
+        zombieSpawnCounter = 0;
+        gameTime = 0;
+        speedIncreaseTimer = 0;
+        zombieSpeedMultiplier = 1;
+        lastZombieHitTime = 0;
+        lastFrameTime = 0;
+        
+        // Update displays
+        distanceSpan.textContent = "0.00";
+        healthFill.style.width = "100%";
+        totalScoreSpan.textContent = "0";
+        startTotalScore.textContent = "0";
+        updateTotalProgress();
     }
 
     function showCodeGenerationScreen() {
@@ -992,6 +1037,9 @@
         gameOverScreen.style.display = 'none';
         backToStartBtn.style.display = 'none';
         Sound.sCodeGenerated();
+        
+        // Set milestone reached flag
+        localStorage.setItem('zombieMilestone80000', 'true');
     }
 
     copyCodeBtn.addEventListener('click', () => {
@@ -1018,8 +1066,18 @@
 
     codeBackToMenuBtn.addEventListener('click', () => {
         codeGenerationScreen.style.display = 'none';
+        fullResetGame(); // Reset everything
         startScreen.style.display = 'flex';
         Sound.sButton();
+    });
+
+    // Play Again button on code generation screen - FULL RESET
+    codePlayAgainBtn.addEventListener('click', () => {
+        codeGenerationScreen.style.display = 'none';
+        fullResetGame(); // Reset everything
+        startScreen.style.display = 'flex';
+        Sound.sButton();
+        startGame(); // Automatically start new game
     });
 
     const road = { width:0, x:0, lanes:3, markings:[], markingHeight:30, markingWidth:10, markingGap:40 };
@@ -1623,18 +1681,25 @@
         networkErrorScreen.style.display = "none";
         backToStartBtn.style.display = "flex";
 
-        distance = 0; hitCount = 0;
-        distanceSpan.textContent = "0.00";
-
+        // Reset current game state but keep total score
+        distance = 0;
+        hitCount = 0;
         player.currentSpeed = player.baseSpeed;
         player.currentForwardSpeed = player.baseForwardSpeed;
-
-        bullets.length = 0; zombies.length = 0; explosions.length = 0; damageEffects.length = 0;
-        zombieSpawnCounter = 0; gameTime = 0; speedIncreaseTimer = 0; zombieSpeedMultiplier = 1; lastZombieHitTime = 0; lastFrameTime = 0;
-
         player.x = canvas.width/2 - player.width/2;
         player.y = canvas.height - 100;
-
+        bullets.length = 0;
+        zombies.length = 0;
+        explosions.length = 0;
+        damageEffects.length = 0;
+        zombieSpawnCounter = 0;
+        gameTime = 0;
+        speedIncreaseTimer = 0;
+        zombieSpeedMultiplier = 1;
+        lastZombieHitTime = 0;
+        lastFrameTime = 0;
+        
+        distanceSpan.textContent = "0.00";
         healthFill.style.width = "100%";
 
         startCountdown();
@@ -1688,7 +1753,6 @@
         gameRunning = false;
         countdownActive = false;
         
-        // Show ad on game over
         await showAdsGramAd("game-over");
         
         finalTotalScore.textContent = totalScore.toLocaleString();
