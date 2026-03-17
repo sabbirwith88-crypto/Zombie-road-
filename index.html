@@ -396,6 +396,11 @@
         }
     </style>
 
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics-compat.js"></script>
+    
     <!-- AdMob App ID -->
     <meta name="com.google.android.gms.ads.APPLICATION_ID" content="ca-app-pub-4830984031121626~6402765319">
     
@@ -453,6 +458,7 @@
         </div>
         <button class="btn" id="startBtn">🚗 Start Game</button>
         <button class="btn" id="settingsBtn">⚙️ Settings</button>
+        <button class="btn btn-network" id="cloudSaveBtn">☁️ Load Cloud Save</button>
     </div>
 
     <div id="settingsScreen">
@@ -470,6 +476,12 @@
             <span>Sound (SFX):</span>
             <button class="toggle-btn active" id="soundOnBtn">ON</button>
             <button class="toggle-btn" id="soundOffBtn">OFF</button>
+        </div>
+        <div class="settings-header">Cloud Save</div>
+        <div class="settings-row">
+            <span>Auto-save to cloud:</span>
+            <button class="toggle-btn active" id="autoSaveOnBtn">ON</button>
+            <button class="toggle-btn" id="autoSaveOffBtn">OFF</button>
         </div>
         <button class="btn" id="backToMainBtn" style="margin-top: 20px;">🔙 Back to Main Menu</button>
     </div>
@@ -532,6 +544,181 @@
 </div>
 
 <script>
+    /* =======================
+       FIREBASE INITIALIZATION
+       ======================= */
+    
+    // Your web app's Firebase configuration
+    const firebaseConfig = {
+        apiKey: "AIzaSyC1NiOgixv8PtHkO8qsYo5U0vU4kJpPmX4",
+        authDomain: "zombie-road-595b8.firebaseapp.com",
+        databaseURL: "https://zombie-road-595b8-default-rtdb.firebaseio.com",
+        projectId: "zombie-road-595b8",
+        storageBucket: "zombie-road-595b8.firebasestorage.app",
+        messagingSenderId: "379025746556",
+        appId: "1:379025746556:web:ad1a038381114e1a6df7f9",
+        measurementId: "G-95ZQ2T4R44"
+    };
+
+    // Initialize Firebase
+    let firebaseApp = null;
+    let database = null;
+    let analytics = null;
+    let firebaseInitialized = false;
+    let autoSaveEnabled = true;
+    let cloudSaveInProgress = false;
+
+    try {
+        firebaseApp = firebase.initializeApp(firebaseConfig);
+        database = firebase.database();
+        analytics = firebase.analytics();
+        firebaseInitialized = true;
+        console.log("✅ Firebase initialized successfully");
+    } catch (error) {
+        console.error("❌ Firebase initialization error:", error);
+        firebaseInitialized = false;
+    }
+
+    /* =======================
+       FIREBASE DATA FUNCTIONS
+       ======================= */
+
+    // Save game data to Firebase
+    async function saveGameDataToFirebase() {
+        if (!firebaseInitialized || !database) {
+            console.log("Firebase not initialized, skipping cloud save");
+            return false;
+        }
+
+        if (!navigator.onLine) {
+            console.log("Offline, cannot save to cloud");
+            return false;
+        }
+
+        if (cloudSaveInProgress) return false;
+
+        cloudSaveInProgress = true;
+
+        try {
+            const userId = getUserId();
+            const gameData = {
+                totalScore: totalScore,
+                generatedCodes: generatedCodes,
+                controlPositions: controlPositions,
+                controlSize: controlSize,
+                vibrationEnabled: vibrationEnabled,
+                sfxEnabled: sfxEnabled,
+                autoSaveEnabled: autoSaveEnabled,
+                timestamp: firebase.database.ServerValue.TIMESTAMP,
+                lastPlayed: new Date().toISOString()
+            };
+
+            await database.ref('users/' + userId).set(gameData);
+            console.log("✅ Game data saved to Firebase");
+            
+            // Show temporary notification
+            showTemporaryNotification('☁️ Game saved to cloud!', '#3498db');
+            
+            cloudSaveInProgress = false;
+            return true;
+        } catch (error) {
+            console.error("❌ Error saving to Firebase:", error);
+            cloudSaveInProgress = false;
+            return false;
+        }
+    }
+
+    // Load game data from Firebase
+    async function loadGameDataFromFirebase() {
+        if (!firebaseInitialized || !database) {
+            showTemporaryNotification('❌ Firebase not initialized', '#e74c3c');
+            return false;
+        }
+
+        if (!navigator.onLine) {
+            showTemporaryNotification('❌ No internet connection', '#e74c3c');
+            return false;
+        }
+
+        try {
+            const userId = getUserId();
+            const snapshot = await database.ref('users/' + userId).once('value');
+            const data = snapshot.val();
+
+            if (data) {
+                // Restore total score
+                if (data.totalScore !== undefined) {
+                    totalScore = data.totalScore;
+                    saveTotalScore();
+                }
+
+                // Restore generated codes
+                if (data.generatedCodes) {
+                    generatedCodes = data.generatedCodes;
+                    localStorage.setItem('zombieGeneratedCodes80000', JSON.stringify(generatedCodes));
+                }
+
+                // Restore control positions
+                if (data.controlPositions) {
+                    controlPositions = data.controlPositions;
+                    updateControlPositions();
+                    localStorage.setItem('controlPositions', JSON.stringify(controlPositions));
+                }
+
+                // Restore control size
+                if (data.controlSize) {
+                    controlSize = data.controlSize;
+                    controlSizeSlider.value = controlSize;
+                    controlSizeValue.textContent = controlSize + '%';
+                    updateControlSizes();
+                    localStorage.setItem('controlSize', controlSize);
+                }
+
+                // Restore settings
+                if (data.vibrationEnabled !== undefined) {
+                    setVibration(data.vibrationEnabled);
+                }
+
+                if (data.sfxEnabled !== undefined) {
+                    Sound.setSfxEnabled(data.sfxEnabled);
+                    activate(soundOnBtn, soundOffBtn, data.sfxEnabled);
+                }
+
+                if (data.autoSaveEnabled !== undefined) {
+                    autoSaveEnabled = data.autoSaveEnabled;
+                    activate(autoSaveOnBtn, autoSaveOffBtn, autoSaveEnabled);
+                }
+
+                showTemporaryNotification('✅ Game loaded from cloud!', '#2ecc71');
+                return true;
+            } else {
+                showTemporaryNotification('📭 No cloud save found', '#f1c40f');
+                return false;
+            }
+        } catch (error) {
+            console.error("❌ Error loading from Firebase:", error);
+            showTemporaryNotification('❌ Failed to load from cloud', '#e74c3c');
+            return false;
+        }
+    }
+
+    // Get or create user ID
+    function getUserId() {
+        let userId = localStorage.getItem('zombieUserId');
+        if (!userId) {
+            userId = 'user_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
+            localStorage.setItem('zombieUserId', userId);
+        }
+        return userId;
+    }
+
+    // Auto-save function
+    function autoSaveToCloud() {
+        if (autoSaveEnabled && firebaseInitialized && navigator.onLine) {
+            saveGameDataToFirebase();
+        }
+    }
+
     /* =======================
        ADS SETUP
        ======================= */
@@ -822,14 +1009,14 @@
         }
     }
 
-    function showTemporaryNotification(message) {
+    function showTemporaryNotification(message, bgColor = 'rgba(46, 204, 113, 0.9)') {
         const notification = document.createElement('div');
         notification.style.cssText = `
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background: rgba(46, 204, 113, 0.9);
+            background: ${bgColor};
             color: white;
             padding: 15px 30px;
             border-radius: 10px;
@@ -867,6 +1054,10 @@
     window.addEventListener('online', () => {
         updateNetworkStatus(true);
         handleNetworkRestore();
+        // Try to sync data when back online
+        if (autoSaveEnabled && firebaseInitialized) {
+            saveGameDataToFirebase();
+        }
     });
 
     window.addEventListener('offline', () => {
@@ -935,6 +1126,9 @@
     const codeBackToMenuBtn = document.getElementById('codeBackToMenuBtn');
     const codePlayAgainBtn = document.getElementById('codePlayAgainBtn');
     const targetDisplay = document.getElementById('targetDisplay');
+    const cloudSaveBtn = document.getElementById('cloudSaveBtn');
+    const autoSaveOnBtn = document.getElementById('autoSaveOnBtn');
+    const autoSaveOffBtn = document.getElementById('autoSaveOffBtn');
 
     // Total Score System - 80,000 target
     let totalScore = 0;
@@ -967,6 +1161,9 @@
         totalScoreSpan.textContent = totalScore.toLocaleString();
         startTotalScore.textContent = totalScore.toLocaleString();
         updateTotalProgress();
+        
+        // Auto-save to Firebase
+        autoSaveToCloud();
     }
 
     function updateTotalProgress() {
@@ -990,6 +1187,10 @@
         
         generatedCodes.push(code);
         localStorage.setItem('zombieGeneratedCodes80000', JSON.stringify(generatedCodes));
+        
+        // Save to Firebase
+        autoSaveToCloud();
+        
         return code;
     }
 
@@ -1025,6 +1226,9 @@
         totalScoreSpan.textContent = "0";
         startTotalScore.textContent = "0";
         updateTotalProgress();
+        
+        // Save reset to Firebase
+        autoSaveToCloud();
     }
 
     function showCodeGenerationScreen() {
@@ -1040,6 +1244,9 @@
         
         // Set milestone reached flag
         localStorage.setItem('zombieMilestone80000', 'true');
+        
+        // Save to Firebase
+        autoSaveToCloud();
     }
 
     copyCodeBtn.addEventListener('click', () => {
@@ -1078,6 +1285,26 @@
         startScreen.style.display = 'flex';
         Sound.sButton();
         startGame(); // Automatically start new game
+    });
+
+    // Cloud Save button
+    cloudSaveBtn.addEventListener('click', () => {
+        Sound.sButton();
+        loadGameDataFromFirebase();
+    });
+
+    // Auto-save toggle
+    autoSaveOnBtn.addEventListener('click', () => {
+        autoSaveEnabled = true;
+        activate(autoSaveOnBtn, autoSaveOffBtn, true);
+        Sound.sButton();
+        saveGameDataToFirebase(); // Save immediately when turned on
+    });
+
+    autoSaveOffBtn.addEventListener('click', () => {
+        autoSaveEnabled = false;
+        activate(autoSaveOnBtn, autoSaveOffBtn, false);
+        Sound.sButton();
     });
 
     const road = { width:0, x:0, lanes:3, markings:[], markingHeight:30, markingWidth:10, markingGap:40 };
@@ -1168,6 +1395,9 @@
     function saveControlPositions() {
         localStorage.setItem('controlPositions', JSON.stringify(controlPositions));
         localStorage.setItem('controlSize', controlSize);
+        
+        // Save to Firebase
+        autoSaveToCloud();
     }
 
     function loadControlPositions() {
@@ -1900,11 +2130,16 @@
         }
         toggleMasterIcon(false);
         activate(soundOnBtn, soundOffBtn, true);
+        activate(autoSaveOnBtn, autoSaveOffBtn, autoSaveEnabled);
     });
 
     window.addEventListener('beforeunload', () => {
         if (networkCheckInterval) {
             clearInterval(networkCheckInterval);
+        }
+        // Final auto-save before leaving
+        if (autoSaveEnabled && firebaseInitialized && navigator.onLine) {
+            saveGameDataToFirebase();
         }
     });
 </script>
