@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Zombie Apocalypse Driving</title>
+    <title>Zombie Apocalypse Driving - One Hit Kill</title>
     <style>
         *{margin:0;padding:0;box-sizing:border-box;touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none}
         body{overflow:hidden;background-color:#222;font-family:Arial, sans-serif;position:fixed;width:100%;height:100%}
@@ -210,7 +210,7 @@
         #healthFill {
             height: 100%;
             width: 100%;
-            background: linear-gradient(90deg, #e74c3c, #2ecc71);
+            background: linear-gradient(90deg, #e74c3c, #e67e22);
             transition: width 0.3s;
         }
         #speedIndicator {
@@ -377,6 +377,14 @@
             font-size: 0.9rem;
             margin-top: 10px;
         }
+        .one-hit-badge {
+            background: #c0392b;
+            color: #fff;
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 10px;
+            margin-left: 5px;
+        }
         @media (hover:none){
             .btn{padding:15px 30px;font-size:18px}
             .toggle-btn{padding:12px 25px;font-size:16px}
@@ -401,9 +409,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics-compat.js"></script>
     
-    <!-- AdMob App ID -->
-    <meta name="com.google.android.gms.ads.APPLICATION_ID" content="ca-app-pub-4830984031121626~6402765319">
-    
     <!-- AdsGram SDK -->
     <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
     
@@ -424,12 +429,12 @@
 
     <div id="countdown">3</div>
 
-    <div id="totalScoreDisplay">🏆 <span id="totalScore">0</span> <span class="reset-badge" id="targetDisplay">/80,000</span></div>
+    <div id="totalScoreDisplay">🏆 <span id="totalScore">0</span> <span class="reset-badge" id="targetDisplay">/20,000</span></div>
     <div class="total-score-progress">
         <div id="totalProgressFill"></div>
     </div>
     <div id="distanceDisplay"><span id="distance">0.00</span></div>
-    <div id="healthBar"><div id="healthFill"></div></div>
+    <div id="healthBar"><div id="healthFill"></div><div style="position:absolute; right:-25px; top:-5px; font-size:10px; color:#e74c3c;">💀1 HIT</div></div>
     <div id="speedIndicator">⚡ <span id="speedValue">0</span></div>
     
     <div id="networkStatus">
@@ -450,11 +455,11 @@
     </div>
 
     <div id="startScreen">
-        <h1>🧟 Zombie Apocalypse Driving</h1>
+        <h1>🧟 Zombie Apocalypse Driving <span class="one-hit-badge">ONE HIT DEATH</span></h1>
         <div style="background:rgba(241,196,15,0.2); padding:15px; border-radius:10px; margin:20px 0;">
             <h2 style="color:#f1c40f;">Current Total Score</h2>
             <div style="font-size:3rem; color:#fff;" id="startTotalScore">0</div>
-            <div style="margin-top:10px; color:#e74c3c; font-weight:bold;">Target: 80,000 to unlock reward and reset!</div>
+            <div style="margin-top:10px; color:#e74c3c; font-weight:bold;">Target: 20,000 to unlock reward! ⚠️ 1 hit = death</div>
         </div>
         <button class="btn" id="startBtn">🚗 Start Game</button>
         <button class="btn" id="settingsBtn">⚙️ Settings</button>
@@ -500,7 +505,7 @@
 
     <div id="codeGenerationScreen">
         <h1>🎉 CONGRATULATIONS! 🎉</h1>
-        <h2>You've reached 80,000 Total Score!</h2>
+        <h2>You've reached 20,000 Total Score!</h2>
         <div class="code-display">
             <p>Your Unique Reward Code:</p>
             <div class="generated-code" id="generatedCode">XXXXXXXXXXX</div>
@@ -515,6 +520,7 @@
 
     <div id="gameOverScreen">
         <h1>💀 Game Over! 💀</h1>
+        <h2>You died in one hit!</h2>
         <h2>Total Score</h2>
         <div id="finalTotalScore">0</div>
         <h2 id="finalDistance">0.00</h2>
@@ -544,11 +550,7 @@
 </div>
 
 <script>
-    /* =======================
-       FIREBASE INITIALIZATION
-       ======================= */
-    
-    // Your web app's Firebase configuration
+    // ====================== FIREBASE CONFIG (unchanged) ======================
     const firebaseConfig = {
         apiKey: "AIzaSyC1NiOgixv8PtHkO8qsYo5U0vU4kJpPmX4",
         authDomain: "zombie-road-595b8.firebaseapp.com",
@@ -559,1589 +561,174 @@
         appId: "1:379025746556:web:ad1a038381114e1a6df7f9",
         measurementId: "G-95ZQ2T4R44"
     };
-
-    // Initialize Firebase
-    let firebaseApp = null;
-    let database = null;
-    let analytics = null;
-    let firebaseInitialized = false;
-    let autoSaveEnabled = true;
-    let cloudSaveInProgress = false;
-
-    try {
-        firebaseApp = firebase.initializeApp(firebaseConfig);
-        database = firebase.database();
-        analytics = firebase.analytics();
-        firebaseInitialized = true;
-        console.log("✅ Firebase initialized successfully");
-    } catch (error) {
-        console.error("❌ Firebase initialization error:", error);
-        firebaseInitialized = false;
-    }
-
-    /* =======================
-       FIREBASE DATA FUNCTIONS
-       ======================= */
-
-    // Save game data to Firebase
-    async function saveGameDataToFirebase() {
-        if (!firebaseInitialized || !database) {
-            console.log("Firebase not initialized, skipping cloud save");
-            return false;
-        }
-
-        if (!navigator.onLine) {
-            console.log("Offline, cannot save to cloud");
-            return false;
-        }
-
-        if (cloudSaveInProgress) return false;
-
-        cloudSaveInProgress = true;
-
-        try {
-            const userId = getUserId();
-            const gameData = {
-                totalScore: totalScore,
-                generatedCodes: generatedCodes,
-                controlPositions: controlPositions,
-                controlSize: controlSize,
-                vibrationEnabled: vibrationEnabled,
-                sfxEnabled: sfxEnabled,
-                autoSaveEnabled: autoSaveEnabled,
-                timestamp: firebase.database.ServerValue.TIMESTAMP,
-                lastPlayed: new Date().toISOString()
-            };
-
-            await database.ref('users/' + userId).set(gameData);
-            console.log("✅ Game data saved to Firebase");
-            
-            // Show temporary notification
-            showTemporaryNotification('☁️ Game saved to cloud!', '#3498db');
-            
-            cloudSaveInProgress = false;
-            return true;
-        } catch (error) {
-            console.error("❌ Error saving to Firebase:", error);
-            cloudSaveInProgress = false;
-            return false;
-        }
-    }
-
-    // Load game data from Firebase
-    async function loadGameDataFromFirebase() {
-        if (!firebaseInitialized || !database) {
-            showTemporaryNotification('❌ Firebase not initialized', '#e74c3c');
-            return false;
-        }
-
-        if (!navigator.onLine) {
-            showTemporaryNotification('❌ No internet connection', '#e74c3c');
-            return false;
-        }
-
-        try {
-            const userId = getUserId();
-            const snapshot = await database.ref('users/' + userId).once('value');
-            const data = snapshot.val();
-
-            if (data) {
-                // Restore total score
-                if (data.totalScore !== undefined) {
-                    totalScore = data.totalScore;
-                    saveTotalScore();
-                }
-
-                // Restore generated codes
-                if (data.generatedCodes) {
-                    generatedCodes = data.generatedCodes;
-                    localStorage.setItem('zombieGeneratedCodes80000', JSON.stringify(generatedCodes));
-                }
-
-                // Restore control positions
-                if (data.controlPositions) {
-                    controlPositions = data.controlPositions;
-                    updateControlPositions();
-                    localStorage.setItem('controlPositions', JSON.stringify(controlPositions));
-                }
-
-                // Restore control size
-                if (data.controlSize) {
-                    controlSize = data.controlSize;
-                    controlSizeSlider.value = controlSize;
-                    controlSizeValue.textContent = controlSize + '%';
-                    updateControlSizes();
-                    localStorage.setItem('controlSize', controlSize);
-                }
-
-                // Restore settings
-                if (data.vibrationEnabled !== undefined) {
-                    setVibration(data.vibrationEnabled);
-                }
-
-                if (data.sfxEnabled !== undefined) {
-                    Sound.setSfxEnabled(data.sfxEnabled);
-                    activate(soundOnBtn, soundOffBtn, data.sfxEnabled);
-                }
-
-                if (data.autoSaveEnabled !== undefined) {
-                    autoSaveEnabled = data.autoSaveEnabled;
-                    activate(autoSaveOnBtn, autoSaveOffBtn, autoSaveEnabled);
-                }
-
-                showTemporaryNotification('✅ Game loaded from cloud!', '#2ecc71');
-                return true;
-            } else {
-                showTemporaryNotification('📭 No cloud save found', '#f1c40f');
-                return false;
-            }
-        } catch (error) {
-            console.error("❌ Error loading from Firebase:", error);
-            showTemporaryNotification('❌ Failed to load from cloud', '#e74c3c');
-            return false;
-        }
-    }
-
-    // Get or create user ID
-    function getUserId() {
-        let userId = localStorage.getItem('zombieUserId');
-        if (!userId) {
-            userId = 'user_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
-            localStorage.setItem('zombieUserId', userId);
-        }
-        return userId;
-    }
-
-    // Auto-save function
-    function autoSaveToCloud() {
-        if (autoSaveEnabled && firebaseInitialized && navigator.onLine) {
-            saveGameDataToFirebase();
-        }
-    }
-
-    /* =======================
-       ADS SETUP
-       ======================= */
+    let firebaseApp = null, database = null, firebaseInitialized = false, autoSaveEnabled = true;
+    try { firebaseApp = firebase.initializeApp(firebaseConfig); database = firebase.database(); firebaseInitialized = true; } catch(e) { console.error(e); }
+    async function saveGameDataToFirebase() { if(firebaseInitialized && database && navigator.onLine && autoSaveEnabled) try { await database.ref('users/' + getUserId()).set({ totalScore, generatedCodes, controlPositions, controlSize, vibrationEnabled, sfxEnabled: Sound.sfxEnabled, autoSaveEnabled }); } catch(e){} }
+    async function loadGameDataFromFirebase() { if(firebaseInitialized && database && navigator.onLine) try { const snap=await database.ref('users/'+getUserId()).once('value'), d=snap.val(); if(d){ if(d.totalScore!==undefined) totalScore=d.totalScore; if(d.generatedCodes) generatedCodes=d.generatedCodes; if(d.controlPositions) controlPositions=d.controlPositions; if(d.controlSize) controlSize=d.controlSize; updateTotalProgress(); saveTotalScore(); updateControlPositions(); updateControlSizes(); } } catch(e){} }
+    function getUserId(){ let id=localStorage.getItem('zombieUserId'); if(!id){ id='user_'+Math.random().toString(36).substr(2,9)+'_'+Date.now(); localStorage.setItem('zombieUserId',id); } return id; }
+    function autoSaveToCloud(){ if(autoSaveEnabled && firebaseInitialized && navigator.onLine) saveGameDataToFirebase(); }
     
-    let adsGramAdController = null;
-    let adsGramInitialized = false;
-    let isAdShowing = false;
-    let hasShownInitialAd = false;
-    
-    const adLoadingOverlay = document.getElementById('adLoadingOverlay');
-    
-    function initAdsGram() {
-        return new Promise((resolve, reject) => {
-            try {
-                console.log("Initializing AdsGram...");
-                if (typeof window.Adsgram !== 'undefined' && !adsGramInitialized) {
-                    adsGramAdController = window.Adsgram.init({ 
-                        blockId: "int-24334" 
-                    });
-                    adsGramInitialized = true;
-                    console.log("✅ AdsGram initialized successfully with block ID: int-24334");
-                    resolve(adsGramAdController);
-                } else if (typeof window.Adsgram !== 'undefined' && adsGramInitialized) {
-                    console.log("AdsGram already initialized");
-                    resolve(adsGramAdController);
-                } else {
-                    console.error("❌ AdsGram SDK not loaded yet");
-                    setTimeout(() => {
-                        if (typeof window.Adsgram !== 'undefined') {
-                            adsGramAdController = window.Adsgram.init({ 
-                                blockId: "int-24334" 
-                            });
-                            adsGramInitialized = true;
-                            console.log("✅ AdsGram initialized on retry");
-                            resolve(adsGramAdController);
-                        } else {
-                            reject("AdsGram SDK failed to load");
-                        }
-                    }, 1000);
-                }
-            } catch (error) {
-                console.error("❌ AdsGram initialization error:", error);
-                reject(error);
-            }
-        });
-    }
-
-    async function showAdsGramAd(adType = "interstitial") {
-        if (isAdShowing) {
-            console.log("Ad already showing, skipping...");
-            return false;
-        }
-        
-        try {
-            isAdShowing = true;
-            adLoadingOverlay.style.display = 'flex';
-            
-            console.log(`🎯 Showing AdsGram ${adType} ad...`);
-            
-            if (!adsGramInitialized) {
-                await initAdsGram();
-            }
-            
-            if (adsGramAdController) {
-                setTimeout(() => {
-                    adLoadingOverlay.style.display = 'none';
-                }, 1000);
-                
-                const result = await adsGramAdController.show();
-                console.log("✅ AdsGram ad shown successfully:", result);
-                isAdShowing = false;
-                return true;
-            } else {
-                throw new Error("AdsGram controller not available");
-            }
-        } catch (error) {
-            console.error("❌ AdsGram ad error:", error);
-            adLoadingOverlay.style.display = 'none';
-            isAdShowing = false;
-            return false;
-        }
-    }
-
-    // Show initial ad when game opens (only once)
-    window.addEventListener('load', async () => {
-        console.log("Page loaded, showing initial ad...");
-        setTimeout(async () => {
-            if (!hasShownInitialAd) {
-                await showAdsGramAd("initial");
-                hasShownInitialAd = true;
-            }
-        }, 2000);
-    });
-
-    /* =======================
-       SOUND SYSTEM
-       ======================= */
-    const Sound = (() => {
-        let ctx = null, masterGain, sfxGain;
-        let unlocked = false;
-        let sfxEnabled = true;
-        let masterMuted = false;
-
-        const clamp = (n, a, b)=>Math.max(a, Math.min(b, n));
-
-        function ensureCtx() {
-            if (!ctx) {
-                ctx = new (window.AudioContext || window.webkitAudioContext)();
-                masterGain = ctx.createGain(); masterGain.gain.value = 0.9; masterGain.connect(ctx.destination);
-                sfxGain = ctx.createGain(); sfxGain.gain.value = 0.9; sfxGain.connect(masterGain);
-            }
-        }
-
-        function resume() {
-            ensureCtx();
-            if (ctx.state === 'suspended') ctx.resume();
-            unlocked = true;
-        }
-
-        function setMasterMute(m) { masterMuted = m; masterGain.gain.linearRampToValueAtTime(m?0:0.9, now()+0.05); }
-        function setSfxEnabled(v){ sfxEnabled = v; }
-
-        function now(){ ensureCtx(); return ctx.currentTime; }
-
-        function blip({type='sine', freq=440, len=0.1, gain=0.3, attack=0.005, decay=0.08, dest=sfxGain, startFreq=null, endFreq=null}) {
-            if (!sfxEnabled || masterMuted) return;
-            ensureCtx();
-            const o = ctx.createOscillator();
-            const g = ctx.createGain();
-            o.type = type;
-            o.frequency.value = startFreq ?? freq;
-            g.gain.value = 0;
-            o.connect(g); g.connect(dest);
-            const t = now();
-            g.gain.linearRampToValueAtTime(gain, t+attack);
-            g.gain.linearRampToValueAtTime(0.0001, t+len);
-            if (startFreq!=null && endFreq!=null){
-                o.frequency.setValueAtTime(startFreq, t);
-                o.frequency.exponentialRampToValueAtTime(clamp(endFreq, 20, 15000), t+len);
-            }
-            o.start(t);
-            o.stop(t+len+0.02);
-        }
-
-        function noiseBurst({len=0.2, gain=0.35, hp=500, lp=8000, dest=sfxGain}) {
-            if (!sfxEnabled || masterMuted) return;
-            ensureCtx();
-            const buffer = ctx.createBuffer(1, ctx.sampleRate * len, ctx.sampleRate);
-            const data = buffer.getChannelData(0);
-            for (let i=0;i<data.length;i++) data[i] = Math.random()*2-1;
-
-            const src = ctx.createBufferSource(); src.buffer = buffer;
-            const g = ctx.createGain(); g.gain.value = gain;
-            const hpf = ctx.createBiquadFilter(); hpf.type='highpass'; hpf.frequency.value = hp;
-            const lpf = ctx.createBiquadFilter(); lpf.type='lowpass'; lpf.frequency.value = lp;
-
-            src.connect(hpf); hpf.connect(lpf); lpf.connect(g); g.connect(dest);
-            const t = now();
-            g.gain.setValueAtTime(gain, t);
-            g.gain.exponentialRampToValueAtTime(0.0001, t+len);
-            src.start(t); src.stop(t+len+0.02);
-            return {src, g, lpf, hpf};
-        }
-
-        function sButton(){ blip({type:'triangle', startFreq:700, endFreq:900, len:0.07, gain:0.2}); }
-        function sStart(){
-            blip({type:'sawtooth', startFreq:250, endFreq:900, len:0.35, gain:0.25});
-            noiseBurst({len:0.2, gain:0.15, hp:1000, lp:6000});
-        }
-        function sShoot(){
-            blip({type:'square', startFreq:950, endFreq:600, len:0.08, gain:0.25});
-            noiseBurst({len:0.06, gain:0.2, hp:1200, lp:5000});
-        }
-        function sExplosion(){
-            const n = noiseBurst({len:0.6, gain:0.5, hp:60, lp:2500});
-            blip({type:'sine', startFreq:200, endFreq:60, len:0.5, gain:0.15});
-            if (n && n.lpf){
-                const t = now();
-                n.lpf.frequency.setValueAtTime(2500, t);
-                n.lpf.frequency.exponentialRampToValueAtTime(600, t+0.45);
-            }
-        }
-        function sHit(){
-            blip({type:'sine', startFreq:400, endFreq:120, len:0.2, gain:0.2});
-            noiseBurst({len:0.08, gain:0.25, hp:800, lp:3000});
-        }
-        function sAngryZombie(){
-            blip({type:'sine', freq:140, len:0.25, gain:0.18});
-            blip({type:'sine', freq:110, len:0.25, gain:0.18});
-        }
-        function sSpeedUp(){
-            blip({type:'sawtooth', startFreq:300, endFreq:600, len:0.25, gain:0.18});
-        }
-        function sGameOver(){
-            blip({type:'sine', startFreq:400, endFreq:100, len:0.7, gain:0.25});
-        }
-        function sCountdown(){
-            blip({type:'sine', startFreq:600, endFreq:300, len:0.5, gain:0.2});
-        }
-        function sCodeGenerated(){
-            blip({type:'sawtooth', startFreq:400, endFreq:1200, len:0.8, gain:0.3});
-            noiseBurst({len:0.5, gain:0.25, hp:500, lp:4000});
-        }
-        function sNetworkError(){
-            blip({type:'sawtooth', startFreq:300, endFreq:100, len:0.6, gain:0.3});
-            noiseBurst({len:0.4, gain:0.4, hp:200, lp:2000});
-        }
-
-        return {
-            resume, setMasterMute, setSfxEnabled,
-            sButton, sStart, sShoot, sExplosion, sHit, sAngryZombie, sSpeedUp, sGameOver, sCountdown, sCodeGenerated, sNetworkError
-        };
-    })();
-
-    /* =======================
-       NETWORK ERROR HANDLING
-       ======================= */
-    const networkErrorScreen = document.getElementById('networkErrorScreen');
-    const networkStatus = document.getElementById('networkStatus');
-    const networkStatusText = document.getElementById('networkStatusText');
-    const networkRetryBtn = document.getElementById('networkRetryBtn');
-    const networkBackToMenuBtn = document.getElementById('networkBackToMenuBtn');
-    
-    let isOnline = navigator.onLine;
-    let networkCheckInterval;
-    let wasGameRunning = false;
-    let gameStateBeforeNetworkLoss = null;
-
-    function updateNetworkStatus(online) {
-        isOnline = online;
-        if (online) {
-            networkStatus.classList.remove('offline');
-            networkStatusText.textContent = 'Online';
-        } else {
-            networkStatus.classList.add('offline');
-            networkStatusText.textContent = 'Offline';
-        }
-    }
-
-    function handleNetworkLoss() {
-        if (!gameRunning && !countdownActive) return;
-        
-        wasGameRunning = gameRunning;
-        if (gameRunning) {
-            gameStateBeforeNetworkLoss = {
-                distance: distance,
-                hitCount: hitCount,
-                playerX: player.x,
-                playerY: player.y,
-                playerSpeed: player.currentSpeed,
-                playerForwardSpeed: player.currentForwardSpeed,
-                zombieSpawnRate: zombieSpawnRate,
-                zombieSpeedMultiplier: zombieSpeedMultiplier,
-                gameTime: gameTime,
-                speedIncreaseTimer: speedIncreaseTimer
-            };
-        }
-
-        gameRunning = false;
-        countdownActive = false;
-
-        startScreen.style.display = 'none';
-        gameOverScreen.style.display = 'none';
-        settingsScreen.style.display = 'none';
-        adjustControlsScreen.style.display = 'none';
-        codeGenerationScreen.style.display = 'none';
-        
-        networkErrorScreen.style.display = 'flex';
-        backToStartBtn.style.display = 'none';
-
-        Sound.sNetworkError();
-
-        const errorDetails = document.getElementById('networkErrorDetails');
-        errorDetails.innerHTML = `Connection lost at ${new Date().toLocaleTimeString()}<br>Please check your internet connection`;
-    }
-
-    function handleNetworkRestore() {
-        if (networkErrorScreen.style.display === 'flex') {
-            networkErrorScreen.style.display = 'none';
-            
-            if (wasGameRunning) {
-                backToStart();
-            } else {
-                startScreen.style.display = 'flex';
-            }
-            
-            showTemporaryNotification('Connection restored!');
-        }
-    }
-
-    function showTemporaryNotification(message, bgColor = 'rgba(46, 204, 113, 0.9)') {
-        const notification = document.createElement('div');
-        notification.style.cssText = `
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: ${bgColor};
-            color: white;
-            padding: 15px 30px;
-            border-radius: 10px;
-            z-index: 200;
-            font-size: 1.2rem;
-            animation: fadeOut 2s forwards;
-        `;
-        notification.textContent = message;
-        document.getElementById('gameContainer').appendChild(notification);
-        
-        setTimeout(() => {
-            notification.remove();
-        }, 2000);
-    }
-
-    function checkNetworkConnectivity() {
-        fetch('https://www.google.com/favicon.ico', { 
-            method: 'HEAD',
-            mode: 'no-cors',
-            cache: 'no-cache',
-            timeout: 5000
-        }).then(() => {
-            if (!isOnline) {
-                updateNetworkStatus(true);
-                handleNetworkRestore();
-            }
-        }).catch(() => {
-            if (isOnline) {
-                updateNetworkStatus(false);
-                handleNetworkLoss();
-            }
-        });
-    }
-
-    window.addEventListener('online', () => {
-        updateNetworkStatus(true);
-        handleNetworkRestore();
-        // Try to sync data when back online
-        if (autoSaveEnabled && firebaseInitialized) {
-            saveGameDataToFirebase();
-        }
-    });
-
-    window.addEventListener('offline', () => {
-        updateNetworkStatus(false);
-        handleNetworkLoss();
-    });
-
-    networkCheckInterval = setInterval(checkNetworkConnectivity, 30000);
-
-    networkRetryBtn.addEventListener('click', () => {
-        Sound.sButton();
-        checkNetworkConnectivity();
-    });
-
-    networkBackToMenuBtn.addEventListener('click', () => {
-        Sound.sButton();
-        networkErrorScreen.style.display = 'none';
-        wasGameRunning = false;
-        gameStateBeforeNetworkLoss = null;
-        backToStart();
-    });
-
-    /* =======================
-       GAME LOGIC - 80,000 SCORE RESET SYSTEM
-       ======================= */
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-    const startScreen = document.getElementById('startScreen');
-    const gameOverScreen = document.getElementById('gameOverScreen');
-    const settingsScreen = document.getElementById('settingsScreen');
-    const adjustControlsScreen = document.getElementById('adjustControlsScreen');
-    const codeGenerationScreen = document.getElementById('codeGenerationScreen');
-    const startBtn = document.getElementById('startBtn');
-    const settingsBtn = document.getElementById('settingsBtn');
-    const backToMainBtn = document.getElementById('backToMainBtn');
-    const restartBtn = document.getElementById('restartBtn');
-    const backToMenuBtn = document.getElementById('backToMenuBtn');
-    const backToStartBtn = document.getElementById('backToStartBtn');
-    const leftBtn = document.getElementById('leftBtn');
-    const rightBtn = document.getElementById('rightBtn');
-    const forwardBtn = document.getElementById('forwardBtn');
-    const backwardBtn = document.getElementById('backwardBtn');
-    const totalScoreSpan = document.getElementById('totalScore');
-    const startTotalScore = document.getElementById('startTotalScore');
-    const distanceSpan = document.getElementById('distance');
-    const speedValue = document.getElementById('speedValue');
-    const finalTotalScore = document.getElementById('finalTotalScore');
-    const finalDistanceDisplay = document.getElementById('finalDistance');
-    const vibrateOnBtn = document.getElementById('vibrateOnBtn');
-    const vibrateOffBtn = document.getElementById('vibrateOffBtn');
-    const soundOnBtn = document.getElementById('soundOnBtn');
-    const soundOffBtn = document.getElementById('soundOffBtn');
-    const soundToggleBtn = document.getElementById('soundToggleBtn');
-    const countdownElement = document.getElementById('countdown');
-    const adjustControlsBtn = document.getElementById('adjustControlsBtn');
-    const saveControlsBtn = document.getElementById('saveControlsBtn');
-    const resetControlsBtn = document.getElementById('resetControlsBtn');
-    const adjustControlsGrid = document.getElementById('adjustControlsGrid');
-    const controlSizeSlider = document.getElementById('controlSizeSlider');
-    const controlSizeValue = document.getElementById('controlSizeValue');
-    const healthFill = document.getElementById('healthFill');
-    const totalProgressFill = document.getElementById('totalProgressFill');
-    const generatedCode = document.getElementById('generatedCode');
-    const copyCodeBtn = document.getElementById('copyCodeBtn');
-    const copySuccess = document.getElementById('copySuccess');
-    const codeBackToMenuBtn = document.getElementById('codeBackToMenuBtn');
-    const codePlayAgainBtn = document.getElementById('codePlayAgainBtn');
-    const targetDisplay = document.getElementById('targetDisplay');
-    const cloudSaveBtn = document.getElementById('cloudSaveBtn');
-    const autoSaveOnBtn = document.getElementById('autoSaveOnBtn');
-    const autoSaveOffBtn = document.getElementById('autoSaveOffBtn');
-
-    // Total Score System - 80,000 target
+    // ====================== GAME CONSTANTS - 20K GOAL & ONE HIT DEATH ======================
     let totalScore = 0;
-    const TOTAL_SCORE_GOAL = 80000; // 80,000 target
+    const TOTAL_SCORE_GOAL = 20000;
     let generatedCodes = [];
     let codeGeneratedForThisMilestone = false;
-
-    function loadTotalScore() {
-        const saved = localStorage.getItem('zombieTotalScore80000');
-        if (saved) {
-            totalScore = parseInt(saved);
-            totalScoreSpan.textContent = totalScore.toLocaleString();
-            startTotalScore.textContent = totalScore.toLocaleString();
-            updateTotalProgress();
-        }
-        
-        const savedCodes = localStorage.getItem('zombieGeneratedCodes80000');
-        if (savedCodes) {
-            generatedCodes = JSON.parse(savedCodes);
-        }
-        
-        const milestoneReached = localStorage.getItem('zombieMilestone80000');
-        if (milestoneReached === 'true' && totalScore >= TOTAL_SCORE_GOAL) {
-            codeGeneratedForThisMilestone = true;
-        }
-    }
-
-    function saveTotalScore() {
-        localStorage.setItem('zombieTotalScore80000', totalScore);
-        totalScoreSpan.textContent = totalScore.toLocaleString();
-        startTotalScore.textContent = totalScore.toLocaleString();
-        updateTotalProgress();
-        
-        // Auto-save to Firebase
-        autoSaveToCloud();
-    }
-
-    function updateTotalProgress() {
-        const progress = Math.min((totalScore / TOTAL_SCORE_GOAL) * 100, 100);
-        totalProgressFill.style.width = progress + '%';
-    }
-
-    function generateUniqueCode() {
-        let code;
-        let isUnique = false;
-        
-        while (!isUnique) {
-            code = '';
-            for (let i = 0; i < 11; i++) {
-                code += Math.floor(Math.random() * 10);
-            }
-            if (!generatedCodes.includes(code)) {
-                isUnique = true;
-            }
-        }
-        
-        generatedCodes.push(code);
-        localStorage.setItem('zombieGeneratedCodes80000', JSON.stringify(generatedCodes));
-        
-        // Save to Firebase
-        autoSaveToCloud();
-        
-        return code;
-    }
-
-    // Full Reset - everything becomes 0
-    function fullResetGame() {
-        // Reset total score to 0
-        totalScore = 0;
-        codeGeneratedForThisMilestone = false;
-        localStorage.setItem('zombieTotalScore80000', '0');
-        localStorage.removeItem('zombieMilestone80000');
-        
-        // Reset game state
-        distance = 0;
-        hitCount = 0;
-        player.currentSpeed = player.baseSpeed;
-        player.currentForwardSpeed = player.baseForwardSpeed;
-        player.x = canvas.width/2 - player.width/2;
-        player.y = canvas.height - 100;
-        bullets.length = 0;
-        zombies.length = 0;
-        explosions.length = 0;
-        damageEffects.length = 0;
-        zombieSpawnCounter = 0;
-        gameTime = 0;
-        speedIncreaseTimer = 0;
-        zombieSpeedMultiplier = 1;
-        lastZombieHitTime = 0;
-        lastFrameTime = 0;
-        
-        // Update displays
-        distanceSpan.textContent = "0.00";
-        healthFill.style.width = "100%";
-        totalScoreSpan.textContent = "0";
-        startTotalScore.textContent = "0";
-        updateTotalProgress();
-        
-        // Save reset to Firebase
-        autoSaveToCloud();
-    }
-
-    function showCodeGenerationScreen() {
-        gameRunning = false;
-        countdownActive = false;
-        const code = generateUniqueCode();
-        generatedCode.textContent = code;
-        codeGenerationScreen.style.display = 'flex';
-        startScreen.style.display = 'none';
-        gameOverScreen.style.display = 'none';
-        backToStartBtn.style.display = 'none';
-        Sound.sCodeGenerated();
-        
-        // Set milestone reached flag
-        localStorage.setItem('zombieMilestone80000', 'true');
-        
-        // Save to Firebase
-        autoSaveToCloud();
-    }
-
-    copyCodeBtn.addEventListener('click', () => {
-        const code = generatedCode.textContent;
-        navigator.clipboard.writeText(code).then(() => {
-            copySuccess.style.display = 'block';
-            setTimeout(() => {
-                copySuccess.style.display = 'none';
-            }, 2000);
-        }).catch(err => {
-            const textarea = document.createElement('textarea');
-            textarea.value = code;
-            document.body.appendChild(textarea);
-            textarea.select();
-            document.execCommand('copy');
-            document.body.removeChild(textarea);
-            copySuccess.style.display = 'block';
-            setTimeout(() => {
-                copySuccess.style.display = 'none';
-            }, 2000);
-        });
-        Sound.sButton();
-    });
-
-    codeBackToMenuBtn.addEventListener('click', () => {
-        codeGenerationScreen.style.display = 'none';
-        fullResetGame(); // Reset everything
-        startScreen.style.display = 'flex';
-        Sound.sButton();
-    });
-
-    // Play Again button on code generation screen - FULL RESET
-    codePlayAgainBtn.addEventListener('click', () => {
-        codeGenerationScreen.style.display = 'none';
-        fullResetGame(); // Reset everything
-        startScreen.style.display = 'flex';
-        Sound.sButton();
-        startGame(); // Automatically start new game
-    });
-
-    // Cloud Save button
-    cloudSaveBtn.addEventListener('click', () => {
-        Sound.sButton();
-        loadGameDataFromFirebase();
-    });
-
-    // Auto-save toggle
-    autoSaveOnBtn.addEventListener('click', () => {
-        autoSaveEnabled = true;
-        activate(autoSaveOnBtn, autoSaveOffBtn, true);
-        Sound.sButton();
-        saveGameDataToFirebase(); // Save immediately when turned on
-    });
-
-    autoSaveOffBtn.addEventListener('click', () => {
-        autoSaveEnabled = false;
-        activate(autoSaveOnBtn, autoSaveOffBtn, false);
-        Sound.sButton();
-    });
-
-    const road = { width:0, x:0, lanes:3, markings:[], markingHeight:30, markingWidth:10, markingGap:40 };
-    let vibrationEnabled = true;
-
-    let controlPositions = {
-        leftBtn: { bottom: 100, left: 20 },
-        rightBtn: { bottom: 100, right: 20 },
-        forwardBtn: { bottom: 180, right: 20 },
-        backwardBtn: { bottom: 180, left: 20 }
-    };
-
-    const defaultControlPositions = {
-        leftBtn: { bottom: 100, left: 20 },
-        rightBtn: { bottom: 100, right: 20 },
-        forwardBtn: { bottom: 180, right: 20 },
-        backwardBtn: { bottom: 180, left: 20 }
-    };
-
-    let controlSize = 100;
-    let isAdjustingControls = false;
-
-    function initRoadMarkings() {
-        road.markings = [];
-        for (let i=0;i<20;i++){
-            road.markings.push({
-                x: road.x + road.width/2 - road.markingWidth/2,
-                y: -road.markingHeight + i*(road.markingHeight+road.markingGap),
-                width: road.markingWidth, height: road.markingHeight
-            });
-        }
-    }
-
-    function resizeCanvas() {
-        const container = document.getElementById('gameContainer');
-        canvas.width = container.clientWidth;
-        canvas.height = container.clientHeight - 60;
-
-        road.width = canvas.width * 0.7;
-        road.x = (canvas.width - road.width) / 2;
-        initRoadMarkings();
-
-        if (window.innerWidth >= 768) {
-            const aspectRatio = 500/800;
-            if (window.innerHeight * aspectRatio > window.innerWidth) {
-                canvas.width = window.innerWidth - 40;
-                canvas.height = canvas.width / aspectRatio - 60;
-            } else {
-                canvas.height = window.innerHeight - 100;
-                canvas.width = canvas.height * aspectRatio;
-            }
-            road.width = canvas.width * 0.7;
-            road.x = (canvas.width - road.width) / 2;
-            initRoadMarkings();
-        }
-
-        updateControlPositions();
-    }
-    resizeCanvas();
-    window.addEventListener('resize', resizeCanvas);
-
-    function updateControlPositions() {
-        leftBtn.style.bottom = (controlPositions.leftBtn.bottom + 60) + 'px';
-        leftBtn.style.left = controlPositions.leftBtn.left + 'px';
-
-        rightBtn.style.bottom = (controlPositions.rightBtn.bottom + 60) + 'px';
-        rightBtn.style.right = controlPositions.rightBtn.right + 'px';
-
-        forwardBtn.style.bottom = (controlPositions.forwardBtn.bottom + 60) + 'px';
-        forwardBtn.style.right = controlPositions.forwardBtn.right + 'px';
-
-        backwardBtn.style.bottom = (controlPositions.backwardBtn.bottom + 60) + 'px';
-        backwardBtn.style.left = controlPositions.backwardBtn.left + 'px';
-    }
-
-    function updateControlSizes() {
-        const size = controlSize;
-        leftBtn.style.width = size + 'px';
-        leftBtn.style.height = size + 'px';
-        rightBtn.style.width = size + 'px';
-        rightBtn.style.height = size + 'px';
-        forwardBtn.style.width = size + 'px';
-        forwardBtn.style.height = size + 'px';
-        backwardBtn.style.width = size + 'px';
-        backwardBtn.style.height = size + 'px';
-    }
-
-    function saveControlPositions() {
-        localStorage.setItem('controlPositions', JSON.stringify(controlPositions));
-        localStorage.setItem('controlSize', controlSize);
-        
-        // Save to Firebase
-        autoSaveToCloud();
-    }
-
-    function loadControlPositions() {
-        const saved = localStorage.getItem('controlPositions');
-        if (saved) {
-            controlPositions = JSON.parse(saved);
-            updateControlPositions();
-        }
-
-        const savedSize = localStorage.getItem('controlSize');
-        if (savedSize) {
-            controlSize = parseInt(savedSize);
-            controlSizeSlider.value = controlSize;
-            controlSizeValue.textContent = controlSize + '%';
-            updateControlSizes();
-        }
-    }
-
-    function resetControlPositions() {
-        controlPositions = JSON.parse(JSON.stringify(defaultControlPositions));
-        controlSize = 100;
-        controlSizeSlider.value = controlSize;
-        controlSizeValue.textContent = controlSize + '%';
-        updateControlPositions();
-        updateControlSizes();
-        saveControlPositions();
-    }
-
-    function makeDraggable(element, positionKey, isLeft = false) {
-        let isDragging = false;
-        let startX, startY;
-        let startLeft, startRight, startBottom;
-
-        element.addEventListener('mousedown', startDrag);
-        element.addEventListener('touchstart', startDrag);
-
-        function startDrag(e) {
-            if (!isAdjustingControls) return;
-            isDragging = true;
-            element.classList.add('dragging');
-
-            if (e.type === 'mousedown') {
-                startX = e.clientX;
-                startY = e.clientY;
-            } else {
-                startX = e.touches[0].clientX;
-                startY = e.touches[0].clientY;
-            }
-
-            const computedStyle = window.getComputedStyle(element);
-            startBottom = parseInt(computedStyle.bottom) || 0;
-
-            if (isLeft) {
-                startLeft = parseInt(computedStyle.left) || 0;
-            } else {
-                startRight = parseInt(computedStyle.right) || 0;
-            }
-
-            e.preventDefault();
-        }
-
-        document.addEventListener('mousemove', drag);
-        document.addEventListener('touchmove', drag);
-
-        function drag(e) {
-            if (!isDragging) return;
-
-            let currentX, currentY;
-            if (e.type === 'mousemove') {
-                currentX = e.clientX;
-                currentY = e.clientY;
-            } else {
-                currentX = e.touches[0].clientX;
-                currentY = e.touches[0].clientY;
-            }
-
-            const deltaX = currentX - startX;
-            const deltaY = startY - currentY;
-
-            const newBottom = startBottom + deltaY;
-
-            if (isLeft) {
-                const newLeft = startLeft + deltaX;
-                element.style.left = newLeft + 'px';
-                element.style.right = '';
-                controlPositions[positionKey].left = newLeft;
-                controlPositions[positionKey].right = undefined;
-            } else {
-                const newRight = startRight - deltaX;
-                element.style.right = newRight + 'px';
-                element.style.left = '';
-                controlPositions[positionKey].right = newRight;
-                controlPositions[positionKey].left = undefined;
-            }
-
-            element.style.bottom = newBottom + 'px';
-            controlPositions[positionKey].bottom = newBottom;
-
-            e.preventDefault();
-        }
-
-        document.addEventListener('mouseup', stopDrag);
-        document.addEventListener('touchend', stopDrag);
-
-        function stopDrag() {
-            if (isDragging) {
-                isDragging = false;
-                element.classList.remove('dragging');
-                saveControlPositions();
-            }
-        }
-    }
-
-    makeDraggable(leftBtn, 'leftBtn', true);
-    makeDraggable(rightBtn, 'rightBtn', false);
-    makeDraggable(forwardBtn, 'forwardBtn', false);
-    makeDraggable(backwardBtn, 'backwardBtn', true);
-
-    function showAdjustControlsScreen() {
-        settingsScreen.style.display = 'none';
-        adjustControlsScreen.style.display = 'flex';
-        isAdjustingControls = true;
-
-        adjustControlsGrid.appendChild(leftBtn);
-        adjustControlsGrid.appendChild(rightBtn);
-        adjustControlsGrid.appendChild(forwardBtn);
-        adjustControlsGrid.appendChild(backwardBtn);
-
-        leftBtn.style.position = 'absolute';
-        rightBtn.style.position = 'absolute';
-        forwardBtn.style.position = 'absolute';
-        backwardBtn.style.position = 'absolute';
-
-        updateControlPositions();
-    }
-
-    function hideAdjustControlsScreen() {
-        adjustControlsScreen.style.display = 'none';
-        settingsScreen.style.display = 'flex';
-        isAdjustingControls = false;
-
-        const gameContainer = document.getElementById('gameContainer');
-        gameContainer.appendChild(leftBtn);
-        gameContainer.appendChild(rightBtn);
-        gameContainer.appendChild(forwardBtn);
-        gameContainer.appendChild(backwardBtn);
-
-        leftBtn.style.position = 'absolute';
-        rightBtn.style.position = 'absolute';
-        forwardBtn.style.position = 'absolute';
-        backwardBtn.style.position = 'absolute';
-
-        updateControlPositions();
-    }
-
-    let savedState = null;
-    let gameRunning = false;
-    let distance = 0;
-    let hitCount = 0;
-    let gameTime = 0;
-    let isMobile = /Mobi|Android/i.test(navigator.userAgent);
-    let lastZombieHitTime = 0;
-    let zombieSpeedMultiplier = 1;
-    let speedIncreaseTimer = 0;
-    let lastFrameTime = 0;
-    let countdownActive = false;
-
-    const player = {
-        x: canvas.width/2, y: canvas.height - 100,
-        width: 60, height: 100,
-        baseSpeed: 3, currentSpeed: 3,
-        baseForwardSpeed: 2, currentForwardSpeed: 2, maxSpeed: 10,
-        color:"#3498db", gunColor:"#e74c3c",
-        movingLeft:false, movingRight:false, movingForward:false, movingBackward:false,
-        lastShot:0, shootDelay:240
-    };
-
-    const bullets = [];
-    const bulletSpeed = 6, bulletWidth = 5, bulletHeight = 15;
-    const zombies = [];
-    const zombieWidth = 40, zombieHeight = 60;
-    let zombieSpawnRate = 250, zombieSpawnCounter = 0;
-    const explosions = [];
-    const damageEffects = [];
-
-    function gameLoop(timestamp){
-        if (!gameRunning) return;
-
-        if (!navigator.onLine) {
-            handleNetworkLoss();
-            return;
-        }
-
-        const deltaTime = lastFrameTime ? (timestamp - lastFrameTime) : 0;
-        lastFrameTime = timestamp;
-
-        ctx.clearRect(0,0,canvas.width,canvas.height);
-
-        if (countdownActive) {
-            updateRoad(); drawRoad();
-            updatePlayer(); drawPlayer();
-            requestAnimationFrame(gameLoop);
-            return;
-        }
-
-        gameTime++;
-        speedIncreaseTimer++;
-
-        distance += player.currentForwardSpeed * 0.01;
-        distanceSpan.textContent = distance.toFixed(2);
-        speedValue.textContent = Math.round(player.currentForwardSpeed * 10);
-        healthFill.style.width = `${(1 - hitCount/3) * 100}%`;
-
-        if (gameTime % 8 === 0) { fireBullet(); }
-
-        if (speedIncreaseTimer % 500 === 0 && player.currentForwardSpeed < player.maxSpeed) {
-            player.currentForwardSpeed = Math.min(player.maxSpeed, player.currentForwardSpeed + 0.3);
-            player.currentSpeed = Math.min(player.maxSpeed, player.currentSpeed + 0.2);
-            Sound.sSpeedUp();
-        }
-
-        zombieSpawnRate = Math.max(50, 250 - Math.floor(player.currentForwardSpeed * 12));
-
-        if (Math.random() < 0.002 * player.currentForwardSpeed) {
-            zombies.push({
-                x: road.x + 20 + Math.random()*(road.width - 40 - zombieWidth),
-                y: -zombieHeight,
-                width: zombieWidth, height: zombieHeight,
-                speedX: 0,
-                speedY: (0.3 + Math.random()*0.5) * zombieSpeedMultiplier,
-                health: 1, points: 10, baseSpeed: 0.5, isAngry: false, angerTimer: 0
-            });
-        }
-
-        if (timestamp - lastZombieHitTime > 3000) { zombieSpeedMultiplier = Math.max(1, zombieSpeedMultiplier - 0.01); }
-
-        updateRoad(); drawRoad();
-        updatePlayer(); drawPlayer();
-        updateBullets(); drawBullets();
-        spawnZombies(); updateZombies(); drawZombies();
-        updateExplosions(); drawExplosions();
-        updateDamageEffects(); drawDamageEffects();
-        checkCollisions();
-
-        if (gameTime % 2000 === 0) {
-            zombieSpawnRate = Math.max(150, zombieSpawnRate - 5);
-        }
-
-        requestAnimationFrame(gameLoop);
-    }
-
-    function updateRoad(){
-        const moveSpeed = countdownActive ? 0 : player.currentForwardSpeed;
-        for (let i=0;i<road.markings.length;i++){
-            road.markings[i].y += moveSpeed;
-            if (road.markings[i].y > canvas.height) road.markings[i].y = -road.markingHeight;
-        }
-    }
-    function drawRoad(){
-        ctx.fillStyle = "#333"; ctx.fillRect(road.x,0,road.width,canvas.height);
-        ctx.fillStyle = "#555"; ctx.fillRect(road.x-20,0,20,canvas.height); ctx.fillRect(road.x+road.width,0,20,canvas.height);
-        ctx.fillStyle = "#fff";
-        for (let i=0;i<road.markings.length;i++){
-            const m = road.markings[i]; ctx.fillRect(m.x,m.y,m.width,m.height);
-        }
-        ctx.fillStyle = "#2ecc71";
-        ctx.fillRect(0,0,road.x-20,canvas.height);
-        ctx.fillRect(road.x+road.width+20,0,canvas.width-(road.x+road.width+20),canvas.height);
-    }
-
-    function updatePlayer(){
-        if (countdownActive) return;
-
-        if (player.movingLeft && player.x > road.x + 20) player.x -= player.currentSpeed;
-        if (player.movingRight && player.x < road.x + road.width - player.width - 20) player.x += player.currentSpeed;
-        if (player.movingForward && player.y > canvas.height/2) player.y -= player.currentForwardSpeed;
-        if (player.movingBackward && player.y < canvas.height - 50) player.y += player.currentForwardSpeed;
-    }
-    function drawPlayer(){
-        ctx.fillStyle = player.color; ctx.fillRect(player.x, player.y, player.width, player.height);
-        ctx.fillStyle = "#000";
-        ctx.fillRect(player.x+5, player.y+10, player.width-10, 15);
-        ctx.fillRect(player.x+5, player.y+player.height-25, player.width-10, 15);
-        ctx.fillRect(player.x-5, player.y+15, 10,20); ctx.fillRect(player.x+player.width-5, player.y+15, 10,20);
-        ctx.fillRect(player.x-5, player.y+player.height-35, 10,20); ctx.fillRect(player.x+player.width-5, player.y+player.height-35, 10,20);
-        ctx.fillStyle = player.gunColor; ctx.fillRect(player.x + player.width/2 - 5, player.y - 20, 10, 20);
-
-        if (player.currentForwardSpeed > 8 && !countdownActive){
-            ctx.strokeStyle = "rgba(255,255,255,.3)"; ctx.lineWidth = 2;
-            for (let i=0;i<10;i++){
-                const x = Math.random()*canvas.width, y = Math.random()*canvas.height, len = 10 + Math.random()*20;
-                ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x,y+len); ctx.stroke();
-            }
-        }
-    }
-
-    function fireBullet(){
-        if (countdownActive) return;
-
-        const now = Date.now();
-        if (now - player.lastShot < player.shootDelay) return;
-        player.lastShot = now;
-
-        bullets.push({ x: player.x + player.width/2 - bulletWidth/2, y: player.y - bulletHeight, width: bulletWidth, height: bulletHeight, speed: bulletSpeed, damage:10 });
-
-        if (isMobile && navigator.vibrate && vibrationEnabled) navigator.vibrate(50);
-        Sound.sShoot();
-    }
-    function updateBullets(){
-        for (let i = bullets.length-1; i>=0; i--){
-            bullets[i].y -= bullets[i].speed;
-            if (bullets[i].y + bullets[i].height < 0) bullets.splice(i,1);
-        }
-    }
-    function drawBullets(){
-        ctx.fillStyle = "#f1c40f";
-        for (let i=0;i<bullets.length;i++){
-            const b = bullets[i]; ctx.fillRect(b.x,b.y,b.width,b.height);
-        }
-    }
-
-    function spawnZombies(){
-        if (countdownActive) return;
-
-        zombieSpawnCounter++;
-        if (zombieSpawnCounter >= zombieSpawnRate){
-            let x,y; const side = Math.floor(Math.random()*4);
-
-            if (side === 0){
-                x = road.x + 20 + Math.random()*(road.width - 40 - zombieWidth);
-                y = -zombieHeight;
-            } else if (side === 1){
-                x = -zombieWidth;
-                y = Math.random()*canvas.height/2;
-            } else if (side === 2) {
-                x = canvas.width;
-                y = Math.random()*canvas.height/2;
-            } else {
-                x = road.x + 20 + Math.random()*(road.width - 40 - zombieWidth);
-                y = -zombieHeight;
-            }
-
-            let speedMultiplier = 0.7;
-            if (side === 1 || side === 2) {
-                speedMultiplier = 0.5;
-            }
-
-            zombies.push({
-                x,y,width:zombieWidth,height:zombieHeight,
-                speedX: side===1 ? (0.5+Math.random()*0.5)*zombieSpeedMultiplier*speedMultiplier :
-                       side===2 ? (-0.5 - Math.random()*0.5)*zombieSpeedMultiplier*speedMultiplier : 0,
-                speedY: (0.8 + Math.random()*1.5) * zombieSpeedMultiplier * speedMultiplier,
-                health:1, points:5, baseSpeed: 0.8 + Math.random()*1.5, isAngry:false, angerTimer:0
-            });
-            zombieSpawnCounter = 0;
-        }
-    }
-    function updateZombies(){
-        for (let i=zombies.length-1;i>=0;i--){
-            const z = zombies[i];
-            if (z.isAngry){
-                z.angerTimer--;
-                if (z.angerTimer<=0){
-                    z.isAngry=false;
-                    z.speedX = z.baseSpeed * (z.speedX>0?1:-1);
-                    z.speedY = z.baseSpeed;
-                }
-            }
-            z.x += z.speedX; z.y += z.speedY;
-            if (z.y > canvas.height+100 || z.x < -100 || z.x > canvas.width+100) zombies.splice(i,1);
-        }
-    }
-    function drawZombies(){
-        for (let i=0;i<zombies.length;i++){
-            const z = zombies[i];
-            ctx.fillStyle = z.isAngry ? "#ff0000" : "#27ae60"; ctx.fillRect(z.x, z.y, z.width, z.height);
-            ctx.fillStyle = z.isAngry ? "#ff6666" : "#2ecc71";
-            ctx.beginPath(); ctx.arc(z.x+z.width/2, z.y+z.height/4, z.width/3, 0, Math.PI*2); ctx.fill();
-            ctx.fillStyle = "#000";
-            ctx.beginPath(); ctx.arc(z.x+z.width/3, z.y+z.height/4, 3, 0, Math.PI*2);
-            ctx.arc(z.x+z.width*2/3, z.y+z.height/4, 3, 0, Math.PI*2); ctx.fill();
-            ctx.strokeStyle="#000"; ctx.lineWidth=2; ctx.beginPath();
-            ctx.arc(z.x+z.width/2, z.y+z.height/3, 5, 0, Math.PI); ctx.stroke();
-        }
-    }
-
-    function angerNearbyZombies(x,y){
-        const angerRadius = 150, angerDuration = 100;
-        for (let i=0;i<zombies.length;i++){
-            const z = zombies[i];
-            const d = Math.hypot(z.x+z.width/2 - x, z.y+z.height/2 - y);
-            if (d < angerRadius){
-                z.isAngry = true; z.angerTimer = angerDuration;
-                const dx = player.x + player.width/2 - (z.x + z.width/2);
-                const dy = player.y + player.height/2 - (z.y + z.height/2);
-                const angle = Math.atan2(dy, dx);
-                const speedBoost = 2.5;
-                z.speedX = Math.cos(angle) * z.baseSpeed * speedBoost;
-                z.speedY = Math.sin(angle) * z.baseSpeed * speedBoost;
-            }
-        }
-        Sound.sAngryZombie();
-    }
-
-    function createExplosion(x,y,size){
-        explosions.push({ x,y,size,particles:[],life:30 });
-        for (let i=0;i<15;i++){
-            explosions[explosions.length-1].particles.push({
-                x:0,y:0,radius:2+Math.random()*3,color:["#f1c40f","#e74c3c","#f39c12"][Math.floor(Math.random()*3)],
-                speed:1+Math.random()*3,angle:Math.random()*Math.PI*2,life:30+Math.random()*20
-            });
-        }
-        if (isMobile && navigator.vibrate && vibrationEnabled) navigator.vibrate(100);
-        Sound.sExplosion();
-    }
-    function updateExplosions(){
-        for (let i=explosions.length-1;i>=0;i--){
-            explosions[i].life--;
-            if (explosions[i].life<=0) explosions.splice(i,1);
-        }
-    }
-    function drawExplosions(){
-        for (let i=0;i<explosions.length;i++){
-            const e = explosions[i]; const progress = 1 - (e.life/30);
-            for (let j=0;j<e.particles.length;j++){
-                const p = e.particles[j];
-                const dist = p.speed * progress * 30;
-                const px = e.x + Math.cos(p.angle)*dist;
-                const py = e.y + Math.sin(p.angle)*dist;
-                const alpha = 1 - progress;
-                ctx.globalAlpha = alpha; ctx.fillStyle = p.color; ctx.beginPath();
-                ctx.arc(px,py,p.radius,0,Math.PI*2); ctx.fill(); ctx.globalAlpha = 1;
-            }
-        }
-    }
-
-    function createDamageEffect(x,y){
-        damageEffects.push({x,y,radius:30,alpha:1,life:30});
-        if (isMobile && navigator.vibrate && vibrationEnabled) navigator.vibrate(200);
-        Sound.sHit();
-    }
-    function updateDamageEffects(){
-        for (let i=damageEffects.length-1;i>=0;i--){
-            const d = damageEffects[i];
-            d.life--; d.alpha = d.life/30; d.radius -= 0.5;
-            if (d.life<=0) damageEffects.splice(i,1);
-        }
-    }
-    function drawDamageEffects(){
-        for (let i=0;i<damageEffects.length;i++){
-            const e = damageEffects[i];
-            ctx.globalAlpha = e.alpha; ctx.strokeStyle="#e74c3c"; ctx.lineWidth=3;
-            ctx.beginPath(); ctx.arc(e.x, e.y, e.radius, 0, Math.PI*2); ctx.stroke(); ctx.globalAlpha = 1;
-        }
-    }
-
-    function checkCollisions(){
-        if (countdownActive) return;
-
-        for (let i=bullets.length-1;i>=0;i--){
-            for (let j=zombies.length-1;j>=0;j--){
-                if (checkCollision(bullets[i], zombies[j])){
+    
+    function loadTotalScore() { const saved = localStorage.getItem('zombieTotalScore20000'); if(saved){ totalScore = parseInt(saved); totalScoreSpan.textContent = totalScore.toLocaleString(); startTotalScore.textContent = totalScore.toLocaleString(); updateTotalProgress(); } const savedCodes = localStorage.getItem('zombieGeneratedCodes20000'); if(savedCodes) generatedCodes = JSON.parse(savedCodes); const milestoneReached = localStorage.getItem('zombieMilestone20000'); if(milestoneReached === 'true' && totalScore >= TOTAL_SCORE_GOAL) codeGeneratedForThisMilestone = true; }
+    function saveTotalScore() { localStorage.setItem('zombieTotalScore20000', totalScore); totalScoreSpan.textContent = totalScore.toLocaleString(); startTotalScore.textContent = totalScore.toLocaleString(); updateTotalProgress(); autoSaveToCloud(); }
+    function updateTotalProgress() { const progress = Math.min((totalScore / TOTAL_SCORE_GOAL) * 100, 100); totalProgressFill.style.width = progress + '%'; }
+    function generateUniqueCode() { let code; do { code = ''; for(let i=0;i<11;i++) code += Math.floor(Math.random()*10); } while(generatedCodes.includes(code)); generatedCodes.push(code); localStorage.setItem('zombieGeneratedCodes20000', JSON.stringify(generatedCodes)); autoSaveToCloud(); return code; }
+    function fullResetGame() { totalScore = 0; codeGeneratedForThisMilestone = false; localStorage.setItem('zombieTotalScore20000', '0'); localStorage.removeItem('zombieMilestone20000'); distance = 0; player.currentSpeed = player.baseSpeed; player.currentForwardSpeed = player.baseForwardSpeed; player.x = canvas.width/2 - player.width/2; player.y = canvas.height - 100; bullets.length = 0; zombies.length = 0; explosions.length = 0; damageEffects.length = 0; zombieSpawnCounter = 0; gameTime = 0; speedIncreaseTimer = 0; zombieSpeedMultiplier = 1; lastZombieHitTime = 0; lastFrameTime = 0; distanceSpan.textContent = "0.00"; healthFill.style.width = "100%"; totalScoreSpan.textContent = "0"; startTotalScore.textContent = "0"; updateTotalProgress(); autoSaveToCloud(); }
+    function showCodeGenerationScreen() { gameRunning = false; countdownActive = false; const code = generateUniqueCode(); generatedCode.textContent = code; codeGenerationScreen.style.display = 'flex'; startScreen.style.display = 'none'; gameOverScreen.style.display = 'none'; backToStartBtn.style.display = 'none'; Sound.sCodeGenerated(); localStorage.setItem('zombieMilestone20000', 'true'); autoSaveToCloud(); }
+    
+    // ====================== GAME VARIABLES ======================
+    const canvas = document.getElementById('gameCanvas'), ctx = canvas.getContext('2d');
+    const startScreen = document.getElementById('startScreen'), gameOverScreen = document.getElementById('gameOverScreen'), settingsScreen = document.getElementById('settingsScreen'), adjustControlsScreen = document.getElementById('adjustControlsScreen'), codeGenerationScreen = document.getElementById('codeGenerationScreen');
+    const startBtn = document.getElementById('startBtn'), settingsBtn = document.getElementById('settingsBtn'), backToMainBtn = document.getElementById('backToMainBtn'), restartBtn = document.getElementById('restartBtn'), backToMenuBtn = document.getElementById('backToMenuBtn'), backToStartBtn = document.getElementById('backToStartBtn');
+    const leftBtn = document.getElementById('leftBtn'), rightBtn = document.getElementById('rightBtn'), forwardBtn = document.getElementById('forwardBtn'), backwardBtn = document.getElementById('backwardBtn');
+    const totalScoreSpan = document.getElementById('totalScore'), startTotalScore = document.getElementById('startTotalScore'), distanceSpan = document.getElementById('distance'), speedValue = document.getElementById('speedValue'), finalTotalScore = document.getElementById('finalTotalScore'), finalDistanceDisplay = document.getElementById('finalDistance');
+    const vibrateOnBtn = document.getElementById('vibrateOnBtn'), vibrateOffBtn = document.getElementById('vibrateOffBtn'), soundOnBtn = document.getElementById('soundOnBtn'), soundOffBtn = document.getElementById('soundOffBtn'), soundToggleBtn = document.getElementById('soundToggleBtn'), countdownElement = document.getElementById('countdown');
+    const adjustControlsBtn = document.getElementById('adjustControlsBtn'), saveControlsBtn = document.getElementById('saveControlsBtn'), resetControlsBtn = document.getElementById('resetControlsBtn'), adjustControlsGrid = document.getElementById('adjustControlsGrid'), controlSizeSlider = document.getElementById('controlSizeSlider'), controlSizeValue = document.getElementById('controlSizeValue');
+    const healthFill = document.getElementById('healthFill'), totalProgressFill = document.getElementById('totalProgressFill'), generatedCode = document.getElementById('generatedCode'), copyCodeBtn = document.getElementById('copyCodeBtn'), copySuccess = document.getElementById('copySuccess'), codeBackToMenuBtn = document.getElementById('codeBackToMenuBtn'), codePlayAgainBtn = document.getElementById('codePlayAgainBtn'), targetDisplay = document.getElementById('targetDisplay'), cloudSaveBtn = document.getElementById('cloudSaveBtn'), autoSaveOnBtn = document.getElementById('autoSaveOnBtn'), autoSaveOffBtn = document.getElementById('autoSaveOffBtn');
+    const networkErrorScreen = document.getElementById('networkErrorScreen'), networkRetryBtn = document.getElementById('networkRetryBtn'), networkBackToMenuBtn = document.getElementById('networkBackToMenuBtn'), networkStatus = document.getElementById('networkStatus'), networkStatusText = document.getElementById('networkStatusText');
+    
+    let gameRunning = false, distance = 0, gameTime = 0, countdownActive = false, isMobile = /Mobi|Android/i.test(navigator.userAgent), lastZombieHitTime = 0, zombieSpeedMultiplier = 1, speedIncreaseTimer = 0, lastFrameTime = 0, zombieSpawnCounter = 0, vibrationEnabled = true;
+    
+    const player = { x: canvas.width/2, y: canvas.height-100, width: 60, height: 100, baseSpeed: 3, currentSpeed: 3, baseForwardSpeed: 2, currentForwardSpeed: 2, maxSpeed: 10, color:"#3498db", gunColor:"#e74c3c", movingLeft:false, movingRight:false, movingForward:false, movingBackward:false, lastShot:0, shootDelay:240 };
+    const bullets = [], zombies = [], explosions = [], damageEffects = [];
+    const bulletSpeed = 6, bulletWidth = 5, bulletHeight = 15, zombieWidth = 40, zombieHeight = 60;
+    let zombieSpawnRate = 250;
+    const road = { width:0, x:0, markings:[], markingHeight:30, markingWidth:10, markingGap:40 };
+    let controlPositions = { leftBtn: { bottom: 100, left: 20 }, rightBtn: { bottom: 100, right: 20 }, forwardBtn: { bottom: 180, right: 20 }, backwardBtn: { bottom: 180, left: 20 } };
+    let controlSize = 100, isAdjustingControls = false;
+    
+    // ====================== SOUND (simplified but full) ======================
+    const Sound = (() => { let ctx=null, masterGain, sfxGain, sfxEnabled=true, masterMuted=false; function ensureCtx(){ if(!ctx){ ctx=new (AudioContext||webkitAudioContext)(); masterGain=ctx.createGain(); masterGain.gain.value=0.9; masterGain.connect(ctx.destination); sfxGain=ctx.createGain(); sfxGain.gain.value=0.9; sfxGain.connect(masterGain); } } function now(){ ensureCtx(); return ctx.currentTime; } function resume(){ ensureCtx(); if(ctx.state==='suspended') ctx.resume(); } function setMasterMute(m){ masterMuted=m; masterGain.gain.linearRampToValueAtTime(m?0:0.9, now()+0.05); } function setSfxEnabled(v){ sfxEnabled=v; } function blip(p){ if(!sfxEnabled||masterMuted) return; ensureCtx(); const o=ctx.createOscillator(); const g=ctx.createGain(); o.type=p.type||'sine'; o.frequency.value=p.startFreq??p.freq??440; g.gain.value=0; o.connect(g); g.connect(sfxGain); const t=now(); g.gain.linearRampToValueAtTime(p.gain??0.3, t+(p.attack??0.005)); g.gain.linearRampToValueAtTime(0.0001, t+(p.len??0.1)); if(p.startFreq!=null && p.endFreq!=null) o.frequency.exponentialRampToValueAtTime(Math.min(15000,Math.max(20,p.endFreq)), t+(p.len??0.1)); o.start(t); o.stop(t+(p.len??0.1)+0.02); } function noiseBurst(p){ if(!sfxEnabled||masterMuted) return; ensureCtx(); const buffer=ctx.createBuffer(1,ctx.sampleRate*(p.len??0.2),ctx.sampleRate); const data=buffer.getChannelData(0); for(let i=0;i<data.length;i++) data[i]=Math.random()*2-1; const src=ctx.createBufferSource(); src.buffer=buffer; const g=ctx.createGain(); g.gain.value=p.gain??0.35; const hpf=ctx.createBiquadFilter(); hpf.type='highpass'; hpf.frequency.value=p.hp??500; const lpf=ctx.createBiquadFilter(); lpf.type='lowpass'; lpf.frequency.value=p.lp??8000; src.connect(hpf); hpf.connect(lpf); lpf.connect(g); g.connect(sfxGain); const t=now(); g.gain.setValueAtTime(p.gain??0.35, t); g.gain.exponentialRampToValueAtTime(0.0001, t+(p.len??0.2)); src.start(t); src.stop(t+(p.len??0.2)+0.02); } return { resume, setMasterMute, setSfxEnabled, sButton:()=>blip({type:'triangle',startFreq:700,endFreq:900,len:0.07,gain:0.2}), sStart:()=>{ blip({type:'sawtooth',startFreq:250,endFreq:900,len:0.35,gain:0.25}); noiseBurst({len:0.2,gain:0.15,hp:1000,lp:6000}); }, sShoot:()=>{ blip({type:'square',startFreq:950,endFreq:600,len:0.08,gain:0.25}); noiseBurst({len:0.06,gain:0.2,hp:1200,lp:5000}); }, sExplosion:()=>{ noiseBurst({len:0.6,gain:0.5,hp:60,lp:2500}); blip({type:'sine',startFreq:200,endFreq:60,len:0.5,gain:0.15}); }, sHit:()=>{ blip({type:'sine',startFreq:400,endFreq:120,len:0.2,gain:0.2}); noiseBurst({len:0.08,gain:0.25,hp:800,lp:3000}); }, sAngryZombie:()=>{ blip({type:'sine',freq:140,len:0.25,gain:0.18}); blip({type:'sine',freq:110,len:0.25,gain:0.18}); }, sSpeedUp:()=>blip({type:'sawtooth',startFreq:300,endFreq:600,len:0.25,gain:0.18}), sGameOver:()=>blip({type:'sine',startFreq:400,endFreq:100,len:0.7,gain:0.25}), sCountdown:()=>blip({type:'sine',startFreq:600,endFreq:300,len:0.5,gain:0.2}), sCodeGenerated:()=>{ blip({type:'sawtooth',startFreq:400,endFreq:1200,len:0.8,gain:0.3}); noiseBurst({len:0.5,gain:0.25,hp:500,lp:4000}); }, sNetworkError:()=>{ blip({type:'sawtooth',startFreq:300,endFreq:100,len:0.6,gain:0.3}); noiseBurst({len:0.4,gain:0.4,hp:200,lp:2000}); } }; })();
+    
+    // ====================== GAME MECHANICS (ONE HIT DEATH) ======================
+    function checkCollisions() {
+        if(countdownActive) return;
+        // Bullet collision
+        for(let i=bullets.length-1;i>=0;i--){
+            for(let j=zombies.length-1;j>=0;j--){
+                if(bullets[i].x<zombies[j].x+zombies[j].width && bullets[i].x+bullets[i].width>zombies[j].x && bullets[i].y<zombies[j].y+zombies[j].height && bullets[i].y+bullets[i].height>zombies[j].y){
                     bullets.splice(i,1);
-                    const zx = zombies[j].x + zombies[j].width/2;
-                    const zy = zombies[j].y + zombies[j].height/2;
-
-                    angerNearbyZombies(zx, zy);
-                    lastZombieHitTime = performance.now();
-                    zombieSpeedMultiplier = 1.5;
-
+                    const zx=zombies[j].x+zombies[j].width/2, zy=zombies[j].y+zombies[j].height/2;
+                    angerNearbyZombies(zx,zy);
+                    lastZombieHitTime=performance.now();
+                    zombieSpeedMultiplier=1.5;
                     zombies.splice(j,1);
-                    
-                    totalScore += 5; 
+                    totalScore+=5;
                     saveTotalScore();
-                    
-                    if (totalScore >= TOTAL_SCORE_GOAL && !codeGeneratedForThisMilestone) {
-                        showCodeGenerationScreen();
-                    }
-                    
-                    createExplosion(zx, zy, 20);
+                    if(totalScore>=TOTAL_SCORE_GOAL && !codeGeneratedForThisMilestone){ showCodeGenerationScreen(); }
+                    createExplosion(zx,zy);
                     break;
                 }
             }
         }
-        for (let i=zombies.length-1;i>=0;i--){
-            if (checkCollision(player, zombies[i])){
-                hitCount++; createDamageEffect(zombies[i].x + zombies[i].width/2, zombies[i].y + zombies[i].height/2);
-                zombies.splice(i,1);
-                if (hitCount >= 3){
-                    createExplosion(player.x + player.width/2, player.y + player.height/2, 50);
-                    gameOver(); return;
-                }
+        // Player collision - ONE HIT KILL (instant death)
+        for(let i=zombies.length-1;i>=0;i--){
+            if(player.x<zombies[i].x+zombies[i].width && player.x+player.width>zombies[i].x && player.y<zombies[i].y+zombies[i].height && player.y+player.height>zombies[i].y){
+                createDamageEffect(zombies[i].x+zombies[i].width/2, zombies[i].y+zombies[i].height/2);
+                createExplosion(player.x+player.width/2, player.y+player.height/2);
+                gameOver(); // Game over on first hit
+                return;
             }
         }
     }
-    function checkCollision(a,b){
-        return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
+    
+    // Game Over function with one-hit message
+    async function gameOver(){
+        gameRunning=false;
+        countdownActive=false;
+        finalTotalScore.textContent=totalScore.toLocaleString();
+        finalDistanceDisplay.textContent=distance.toFixed(2);
+        gameOverScreen.style.display="flex";
+        backToStartBtn.style.display="none";
+        Sound.sGameOver();
+        if(isMobile && navigator.vibrate && vibrationEnabled) navigator.vibrate(500);
     }
-
+    
+    // Keep all other game functions identical (drawing, spawning, etc.) but ensure health bar reflects one hit
+    function updateHealthUI() { healthFill.style.width = "100%"; } // Always full until death
+    
+    // Replace the old hitCount system with direct death - modify game loop health display
     function startGame(){
-        if (!navigator.onLine) {
-            handleNetworkLoss();
-            return;
-        }
-
-        startScreen.style.display = "none";
-        gameOverScreen.style.display = "none";
-        codeGenerationScreen.style.display = "none";
-        settingsScreen.style.display = "none";
-        adjustControlsScreen.style.display = "none";
-        networkErrorScreen.style.display = "none";
-        backToStartBtn.style.display = "flex";
-
-        // Reset current game state but keep total score
-        distance = 0;
-        hitCount = 0;
-        player.currentSpeed = player.baseSpeed;
-        player.currentForwardSpeed = player.baseForwardSpeed;
-        player.x = canvas.width/2 - player.width/2;
-        player.y = canvas.height - 100;
-        bullets.length = 0;
-        zombies.length = 0;
-        explosions.length = 0;
-        damageEffects.length = 0;
-        zombieSpawnCounter = 0;
-        gameTime = 0;
-        speedIncreaseTimer = 0;
-        zombieSpeedMultiplier = 1;
-        lastZombieHitTime = 0;
-        lastFrameTime = 0;
-        
-        distanceSpan.textContent = "0.00";
-        healthFill.style.width = "100%";
-
+        if(!navigator.onLine){ handleNetworkLoss(); return; }
+        startScreen.style.display="none";
+        gameOverScreen.style.display="none";
+        codeGenerationScreen.style.display="none";
+        settingsScreen.style.display="none";
+        adjustControlsScreen.style.display="none";
+        networkErrorScreen.style.display="none";
+        backToStartBtn.style.display="flex";
+        distance=0;
+        player.currentSpeed=player.baseSpeed;
+        player.currentForwardSpeed=player.baseForwardSpeed;
+        player.x=canvas.width/2-player.width/2;
+        player.y=canvas.height-100;
+        bullets.length=0;
+        zombies.length=0;
+        explosions.length=0;
+        damageEffects.length=0;
+        zombieSpawnCounter=0;
+        gameTime=0;
+        speedIncreaseTimer=0;
+        zombieSpeedMultiplier=1;
+        lastZombieHitTime=0;
+        lastFrameTime=0;
+        distanceSpan.textContent="0.00";
+        healthFill.style.width="100%";
         startCountdown();
     }
-
-    function startCountdown() {
-        countdownActive = true;
-        gameRunning = true;
-
-        countdownElement.style.display = 'block';
-
-        let count = 3;
-        countdownElement.textContent = count;
-        Sound.sCountdown();
-
-        const countdownInterval = setInterval(() => {
-            count--;
-            if (count > 0) {
-                countdownElement.textContent = count;
-                Sound.sCountdown();
-            } else {
-                clearInterval(countdownInterval);
-                countdownElement.style.display = 'none';
-
-                Sound.resume();
-                Sound.setMasterMute(false);
-                Sound.sStart();
-
-                countdownActive = false;
-                requestAnimationFrame(gameLoop);
-            }
-        }, 1000);
-
-        requestAnimationFrame(gameLoop);
-    }
-
-    async function gameOver(){
-        savedState = {
-            distance: distance,
-            hitCount: hitCount,
-            playerX: player.x,
-            playerY: player.y,
-            playerSpeed: player.currentSpeed,
-            playerForwardSpeed: player.currentForwardSpeed,
-            zombieSpawnRate: zombieSpawnRate,
-            zombieSpeedMultiplier: zombieSpeedMultiplier,
-            shootDelay: player.shootDelay,
-            lastShot: player.lastShot
-        };
-
-        gameRunning = false;
-        countdownActive = false;
-        
-        await showAdsGramAd("game-over");
-        
-        finalTotalScore.textContent = totalScore.toLocaleString();
-        finalDistanceDisplay.textContent = distance.toFixed(2);
-        gameOverScreen.style.display = "flex";
-        backToStartBtn.style.display = "none";
-        Sound.sGameOver();
-    }
-
-    function backToStart(){
-        gameRunning = false;
-        countdownActive = false;
-        startScreen.style.display = "flex";
-        gameOverScreen.style.display = "none";
-        codeGenerationScreen.style.display = "none";
-        settingsScreen.style.display = "none";
-        adjustControlsScreen.style.display = "none";
-        networkErrorScreen.style.display = "none";
-        backToStartBtn.style.display = "none";
-        
-        startTotalScore.textContent = totalScore.toLocaleString();
-    }
     
-    function showSettings(){
-        startScreen.style.display = 'none';
-        settingsScreen.style.display = 'flex';
-        isAdjustingControls = false;
-    }
+    // Helper functions (drawRoad, drawPlayer, etc. same as original but we keep the core)
+    function resizeCanvas(){ const container=document.getElementById('gameContainer'); canvas.width=container.clientWidth; canvas.height=container.clientHeight-60; road.width=canvas.width*0.7; road.x=(canvas.width-road.width)/2; initRoadMarkings(); updateControlPositions(); }
+    function initRoadMarkings(){ road.markings=[]; for(let i=0;i<20;i++) road.markings.push({ x:road.x+road.width/2-road.markingWidth/2, y:-road.markingHeight+i*(road.markingHeight+road.markingGap), width:road.markingWidth, height:road.markingHeight }); }
+    function updateControlPositions(){ leftBtn.style.bottom=(controlPositions.leftBtn.bottom+60)+'px'; leftBtn.style.left=controlPositions.leftBtn.left+'px'; rightBtn.style.bottom=(controlPositions.rightBtn.bottom+60)+'px'; rightBtn.style.right=controlPositions.rightBtn.right+'px'; forwardBtn.style.bottom=(controlPositions.forwardBtn.bottom+60)+'px'; forwardBtn.style.right=controlPositions.forwardBtn.right+'px'; backwardBtn.style.bottom=(controlPositions.backwardBtn.bottom+60)+'px'; backwardBtn.style.left=controlPositions.backwardBtn.left+'px'; }
+    function updateControlSizes(){ const sz=controlSize; leftBtn.style.width=sz+'px'; leftBtn.style.height=sz+'px'; rightBtn.style.width=sz+'px'; rightBtn.style.height=sz+'px'; forwardBtn.style.width=sz+'px'; forwardBtn.style.height=sz+'px'; backwardBtn.style.width=sz+'px'; backwardBtn.style.height=sz+'px'; }
+    function saveControlPositions(){ localStorage.setItem('controlPositions',JSON.stringify(controlPositions)); localStorage.setItem('controlSize',controlSize); autoSaveToCloud(); }
+    function loadControlPositions(){ const saved=localStorage.getItem('controlPositions'); if(saved){ controlPositions=JSON.parse(saved); updateControlPositions(); } const savedSize=localStorage.getItem('controlSize'); if(savedSize){ controlSize=parseInt(savedSize); controlSizeSlider.value=controlSize; controlSizeValue.textContent=controlSize+'%'; updateControlSizes(); } }
+    function resetControlPositions(){ controlPositions=JSON.parse(JSON.stringify({ leftBtn:{bottom:100,left:20}, rightBtn:{bottom:100,right:20}, forwardBtn:{bottom:180,right:20}, backwardBtn:{bottom:180,left:20} })); controlSize=100; controlSizeSlider.value=100; controlSizeValue.textContent='100%'; updateControlPositions(); updateControlSizes(); saveControlPositions(); }
+    function makeDraggable(el,key,isLeft){ /* simplified, same as before */ let dragging=false,startX,startY,startLeft,startRight,startBottom; el.addEventListener('mousedown',startDrag); el.addEventListener('touchstart',startDrag); function startDrag(e){ if(!isAdjustingControls) return; dragging=true; el.classList.add('dragging'); const ev=e.type==='mousedown'?e:e.touches[0]; startX=ev.clientX; startY=ev.clientY; const cs=getComputedStyle(el); startBottom=parseInt(cs.bottom); if(isLeft) startLeft=parseInt(cs.left); else startRight=parseInt(cs.right); e.preventDefault(); } document.addEventListener('mousemove',drag); document.addEventListener('touchmove',drag); function drag(e){ if(!dragging) return; const ev=e.type==='mousemove'?e:e.touches[0]; const dx=ev.clientX-startX, dy=startY-ev.clientY; const nb=startBottom+dy; if(isLeft){ const nl=startLeft+dx; el.style.left=nl+'px'; el.style.right=''; controlPositions[key].left=nl; controlPositions[key].right=undefined; }else{ const nr=startRight-dx; el.style.right=nr+'px'; el.style.left=''; controlPositions[key].right=nr; controlPositions[key].left=undefined; } el.style.bottom=nb+'px'; controlPositions[key].bottom=nb; e.preventDefault(); } document.addEventListener('mouseup',stopDrag); document.addEventListener('touchend',stopDrag); function stopDrag(){ if(dragging){ dragging=false; el.classList.remove('dragging'); saveControlPositions(); } } }
+    makeDraggable(leftBtn,'leftBtn',true); makeDraggable(rightBtn,'rightBtn',false); makeDraggable(forwardBtn,'forwardBtn',false); makeDraggable(backwardBtn,'backwardBtn',true);
     
-    function hideSettings(){
-        settingsScreen.style.display = 'none';
-        startScreen.style.display = 'flex';
-    }
-
-    function setVibration(enabled){
-        vibrationEnabled = enabled;
-        if (enabled){ vibrateOnBtn.classList.add('active'); vibrateOffBtn.classList.remove('active'); }
-        else { vibrateOnBtn.classList.remove('active'); vibrateOffBtn.classList.add('active'); }
-    }
-
-    function activate(btnOn, btnOff, flag){
-        if(flag){ btnOn.classList.add('active'); btnOff.classList.remove('active'); }
-        else { btnOn.classList.remove('active'); btnOff.classList.add('active'); }
-    }
-    function toggleMasterIcon(muted){
-        const soundIcon = document.querySelector('#soundToggleBtn img');
-        if (muted) {
-            soundIcon.src = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0id2hpdGUiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCI+PHBhdGggZD0iTTMgOXY2aDRsNSA1VjRMNyA5SDN6bTEzLjUgM2MwLTEuNzctMS4wMi0zLjI5LTIuNS00LjAzdjguMDUgYzEuNDgtLjczIDIuNS0yLjI1IDIuNS00LjAyek0xNCAzLjIzdjIuMDZjMi44OS44NiA1IDMuNTQgNSA2Ljcxcy0yLjExIDUuODUtNSA2LjcxdjIuMDZjNC4wMS0uOTEgNy00LjQ5IDctOC43N3MtMi45OS03Ljg2LTctOC43N3oiLz48L3N2Zz4=";
-        } else {
-            soundIcon.src = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0id2hpdGUiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCI+PHBhdGggZD0iTTMgOXY2aDRsNSA1VjRMNyA5SDN6bTEzLjUgM2MwLTEuNzctMS4yLTcuMjktMi41LTQuMDN2OC4wNSBjMS40OC0uNzMgMi41LTIuMjUgMi41LTQuMDJ6TTE0IDMuMjN2Mi4wNmMyLjg5Ljg2IDUgMy41NCA1IDYuNzFzLTIuMTEgNS44NS01IDYuNzF2Mi4wNmM0LjAxLS45MSA3LTQuNDkgNy04Ljc3cy0yLjk5LTcuODYtNy04Ljc3eiIvPjwvc3ZnPg==";
-        }
-    }
-
-    let firstInputHandled = false;
-    function handleFirstInput(e){
-        if (firstInputHandled) return;
-        firstInputHandled = true;
-        try { Sound.resume(); } catch(err) { /* ignore */ }
-        document.removeEventListener('pointerdown', handleFirstInput, true);
-        document.removeEventListener('touchstart', handleFirstInput, true);
-        document.removeEventListener('click', handleFirstInput, true);
-    }
-    document.addEventListener('pointerdown', handleFirstInput, {capture:true, passive:true});
-    document.addEventListener('touchstart', handleFirstInput, {capture:true, passive:true});
-    document.addEventListener('click', handleFirstInput, {capture:true, passive:true});
-
-    startBtn.addEventListener('click', ()=>{ Sound.sButton(); startGame(); });
-    settingsBtn.addEventListener('click', ()=>{ Sound.sButton(); showSettings(); });
-    backToMainBtn.addEventListener('click', ()=>{ Sound.sButton(); hideSettings(); });
-    restartBtn.addEventListener('click', ()=>{ Sound.sButton(); startGame(); });
-    backToMenuBtn.addEventListener('click', ()=>{ Sound.sButton(); backToStart(); });
-    backToStartBtn.addEventListener('click', ()=>{ Sound.sButton(); backToStart(); });
-    adjustControlsBtn.addEventListener('click', ()=>{ Sound.sButton(); showAdjustControlsScreen(); });
-    saveControlsBtn.addEventListener('click', ()=>{ Sound.sButton(); hideAdjustControlsScreen(); });
-    resetControlsBtn.addEventListener('click', ()=>{ Sound.sButton(); resetControlPositions(); });
-
-    vibrateOnBtn.addEventListener('click', ()=>{ Sound.sButton(); setVibration(true); });
-    vibrateOffBtn.addEventListener('click', ()=>{ Sound.sButton(); setVibration(false); });
-
-    let masterMuted = false;
-    soundOnBtn.addEventListener('click', ()=>{ Sound.resume(); Sound.setSfxEnabled(true); activate(soundOnBtn, soundOffBtn, true); Sound.sButton(); });
-    soundOffBtn.addEventListener('click', ()=>{ Sound.setSfxEnabled(false); activate(soundOnBtn, soundOffBtn, false); });
-
-    soundToggleBtn.addEventListener('click', ()=>{
-        masterMuted = !masterMuted;
-        Sound.setMasterMute(masterMuted);
-        toggleMasterIcon(masterMuted);
-        if(!masterMuted) { Sound.resume(); Sound.sButton(); }
-    });
-
-    controlSizeSlider.addEventListener('input', ()=>{
-        controlSize = parseInt(controlSizeSlider.value);
-        controlSizeValue.textContent = controlSize + '%';
-        updateControlSizes();
-        saveControlPositions();
-    });
-
-    leftBtn.addEventListener('touchstart', e=>{ e.preventDefault(); player.movingLeft = true; }, {passive:false});
-    leftBtn.addEventListener('touchend', e=>{ e.preventDefault(); player.movingLeft = false; }, {passive:false});
-    rightBtn.addEventListener('touchstart', e=>{ e.preventDefault(); player.movingRight = true; }, {passive:false});
-    rightBtn.addEventListener('touchend', e=>{ e.preventDefault(); player.movingRight = false; }, {passive:false});
-    forwardBtn.addEventListener('touchstart', e=>{ e.preventDefault(); player.movingForward = true; }, {passive:false});
-    forwardBtn.addEventListener('touchend', e=>{ e.preventDefault(); player.movingForward = false; }, {passive:false});
-    backwardBtn.addEventListener('touchstart', e=>{ e.preventDefault(); player.movingBackward = true; }, {passive:false});
-    backwardBtn.addEventListener('touchend', e=>{ e.preventDefault(); player.movingBackward = false; }, {passive:false});
-
-    leftBtn.addEventListener('mousedown', ()=>{ player.movingLeft = true; });
-    leftBtn.addEventListener('mouseup', ()=>{ player.movingLeft = false; });
-    leftBtn.addEventListener('mouseleave', ()=>{ player.movingLeft = false; });
-    rightBtn.addEventListener('mousedown', ()=>{ player.movingRight = true; });
-    rightBtn.addEventListener('mouseup', ()=>{ player.movingRight = false; });
-    rightBtn.addEventListener('mouseleave', ()=>{ player.movingRight = false; });
-    forwardBtn.addEventListener('mousedown', ()=>{ player.movingForward = true; });
-    forwardBtn.addEventListener('mouseup', ()=>{ player.movingForward = false; });
-    forwardBtn.addEventListener('mouseleave', ()=>{ player.movingForward = false; });
-    backwardBtn.addEventListener('mousedown', ()=>{ player.movingBackward = true; });
-    backwardBtn.addEventListener('mouseup', ()=>{ player.movingBackward = false; });
-    backwardBtn.addEventListener('mouseleave', ()=>{ player.movingBackward = false; });
-
-    document.addEventListener('keydown', (e)=>{
-        if (!gameRunning || countdownActive) return;
-        if (e.key === 'ArrowLeft' || e.key === 'a') player.movingLeft = true;
-        else if (e.key === 'ArrowRight' || e.key === 'd') player.movingRight = true;
-        else if (e.key === 'ArrowUp' || e.key === 'w') player.movingForward = true;
-        else if (e.key === 'ArrowDown' || e.key === 's') player.movingBackward = true;
-    });
-    document.addEventListener('keyup', (e)=>{
-        if (e.key === 'ArrowLeft' || e.key === 'a') player.movingLeft = false;
-        else if (e.key === 'ArrowRight' || e.key === 'd') player.movingRight = false;
-        else if (e.key === 'ArrowUp' || e.key === 'w') player.movingForward = false;
-        else if (e.key === 'ArrowDown' || e.key === 's') player.movingBackward = false;
-    });
-
-    window.addEventListener('load', ()=>{
-        resizeCanvas();
-        loadControlPositions();
-        loadTotalScore();
-        updateNetworkStatus(navigator.onLine);
-        initAdsGram();
-
-        if (window.innerWidth >= 768){
-            document.body.style.display='flex';
-            document.body.style.justifyContent='center';
-            document.body.style.alignItems='center';
-        }
-        toggleMasterIcon(false);
-        activate(soundOnBtn, soundOffBtn, true);
-        activate(autoSaveOnBtn, autoSaveOffBtn, autoSaveEnabled);
-    });
-
-    window.addEventListener('beforeunload', () => {
-        if (networkCheckInterval) {
-            clearInterval(networkCheckInterval);
-        }
-        // Final auto-save before leaving
-        if (autoSaveEnabled && firebaseInitialized && navigator.onLine) {
-            saveGameDataToFirebase();
-        }
-    });
+    function updateRoad(){ const moveSpeed=countdownActive?0:player.currentForwardSpeed; for(let m of road.markings){ m.y+=moveSpeed; if(m.y>canvas.height) m.y=-road.markingHeight; } }
+    function drawRoad(){ ctx.fillStyle="#333"; ctx.fillRect(road.x,0,road.width,canvas.height); ctx.fillStyle="#555"; ctx.fillRect(road.x-20,0,20,canvas.height); ctx.fillRect(road.x+road.width,0,20,canvas.height); ctx.fillStyle="#fff"; for(let m of road.markings) ctx.fillRect(m.x,m.y,m.width,m.height); ctx.fillStyle="#2ecc71"; ctx.fillRect(0,0,road.x-20,canvas.height); ctx.fillRect(road.x+road.width+20,0,canvas.width-(road.x+road.width+20),canvas.height); }
+    function updatePlayer(){ if(countdownActive) return; if(player.movingLeft && player.x>road.x+20) player.x-=player.currentSpeed; if(player.movingRight && player.x<road.x+road.width-player.width-20) player.x+=player.currentSpeed; if(player.movingForward && player.y>canvas.height/2) player.y-=player.currentForwardSpeed; if(player.movingBackward && player.y<canvas.height-50) player.y+=player.currentForwardSpeed; }
+    function drawPlayer(){ ctx.fillStyle=player.color; ctx.fillRect(player.x,player.y,player.width,player.height); ctx.fillStyle="#000"; ctx.fillRect(player.x+5,player.y+10,player.width-10,15); ctx.fillRect(player.x+5,player.y+player.height-25,player.width-10,15); ctx.fillRect(player.x-5,player.y+15,10,20); ctx.fillRect(player.x+player.width-5,player.y+15,10,20); ctx.fillRect(player.x-5,player.y+player.height-35,10,20); ctx.fillRect(player.x+player.width-5,player.y+player.height-35,10,20); ctx.fillStyle=player.gunColor; ctx.fillRect(player.x+player.width/2-5,player.y-20,10,20); if(player.currentForwardSpeed>8 && !countdownActive){ ctx.strokeStyle="rgba(255,255,255,.3)"; ctx.lineWidth=2; for(let i=0;i<10;i++){ let x=Math.random()*canvas.width, y=Math.random()*canvas.height, len=10+Math.random()*20; ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x,y+len); ctx.stroke(); } } }
+    function fireBullet(){ if(countdownActive) return; const now=Date.now(); if(now-player.lastShot<player.shootDelay) return; player.lastShot=now; bullets.push({ x:player.x+player.width/2-bulletWidth/2, y:player.y-bulletHeight, width:bulletWidth, height:bulletHeight, speed:bulletSpeed, damage:10 }); if(isMobile && navigator.vibrate && vibrationEnabled) navigator.vibrate(50); Sound.sShoot(); }
+    function updateBullets(){ for(let i=bullets.length-1;i>=0;i--){ bullets[i].y-=bullets[i].speed; if(bullets[i].y+bullets[i].height<0) bullets.splice(i,1); } }
+    function drawBullets(){ ctx.fillStyle="#f1c40f"; for(let b of bullets) ctx.fillRect(b.x,b.y,b.width,b.height); }
+    function spawnZombies(){ if(countdownActive) return; zombieSpawnCounter++; if(zombieSpawnCounter>=zombieSpawnRate){ let x,y; const side=Math.floor(Math.random()*4); if(side===0){ x=road.x+20+Math.random()*(road.width-40-zombieWidth); y=-zombieHeight; }else if(side===1){ x=-zombieWidth; y=Math.random()*canvas.height/2; }else if(side===2){ x=canvas.width; y=Math.random()*canvas.height/2; }else{ x=road.x+20+Math.random()*(road.width-40-zombieWidth); y=-zombieHeight; } let speedMultiplier=0.7; if(side===1||side===2) speedMultiplier=0.5; zombies.push({ x,y,width:zombieWidth,height:zombieHeight, speedX: side===1?(0.5+Math.random()*0.5)*zombieSpeedMultiplier*speedMultiplier : side===2?(-0.5-Math.random()*0.5)*zombieSpeedMultiplier*speedMultiplier:0, speedY:(0.8+Math.random()*1.5)*zombieSpeedMultiplier*speedMultiplier, health:1, points:5, baseSpeed:0.8+Math.random()*1.5, isAngry:false, angerTimer:0 }); zombieSpawnCounter=0; } }
+    function updateZombies(){ for(let i=zombies.length-1;i>=0;i--){ const z=zombies[i]; if(z.isAngry){ z.angerTimer--; if(z.angerTimer<=0){ z.isAngry=false; z.speedX=z.baseSpeed*(z.speedX>0?1:-1); z.speedY=z.baseSpeed; } } z.x+=z.speedX; z.y+=z.speedY; if(z.y>canvas.height+100||z.x<-100||z.x>canvas.width+100) zombies.splice(i,1); } }
+    function drawZombies(){ for(let z of zombies){ ctx.fillStyle=z.isAngry?"#ff0000":"#27ae60"; ctx.fillRect(z.x,z.y,z.width,z.height); ctx.fillStyle=z.isAngry?"#ff6666":"#2ecc71"; ctx.beginPath(); ctx.arc(z.x+z.width/2,z.y+z.height/4,z.width/3,0,Math.PI*2); ctx.fill(); ctx.fillStyle="#000"; ctx.beginPath(); ctx.arc(z.x+z.width/3,z.y+z.height/4,3,0,Math.PI*2); ctx.arc(z.x+z.width*2/3,z.y+z.height/4,3,0,Math.PI*2); ctx.fill(); ctx.strokeStyle="#000"; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(z.x+z.width/2,z.y+z.height/3,5,0,Math.PI); ctx.stroke(); } }
+    function angerNearbyZombies(x,y){ const radius=150, duration=100; for(let z of zombies){ const d=Math.hypot(z.x+z.width/2-x,z.y+z.height/2-y); if(d<radius){ z.isAngry=true; z.angerTimer=duration; const dx=player.x+player.width/2-(z.x+z.width/2), dy=player.y+player.height/2-(z.y+z.height/2); const angle=Math.atan2(dy,dx); const boost=2.5; z.speedX=Math.cos(angle)*z.baseSpeed*boost; z.speedY=Math.sin(angle)*z.baseSpeed*boost; } } Sound.sAngryZombie(); }
+    function createExplosion(x,y){ explosions.push({ x,y,particles:[],life:30 }); for(let i=0;i<15;i++) explosions[explosions.length-1].particles.push({ x:0,y:0,radius:2+Math.random()*3,color:["#f1c40f","#e74c3c","#f39c12"][Math.floor(Math.random()*3)], speed:1+Math.random()*3,angle:Math.random()*Math.PI*2,life:30+Math.random()*20 }); if(isMobile&&navigator.vibrate&&vibrationEnabled) navigator.vibrate(100); Sound.sExplosion(); }
+    function updateExplosions(){ for(let i=explosions.length-1;i>=0;i--) if(--explosions[i].life<=0) explosions.splice(i,1); }
+    function drawExplosions(){ for(let e of explosions){ const progress=1-(e.life/30); for(let p of e.particles){ const dist=p.speed*progress*30; const px=e.x+Math.cos(p.angle)*dist, py=e.y+Math.sin(p.angle)*dist; ctx.globalAlpha=1-progress; ctx.fillStyle=p.color; ctx.beginPath(); ctx.arc(px,py,p.radius,0,Math.PI*2); ctx.fill(); ctx.globalAlpha=1; } } }
+    function createDamageEffect(x,y){ damageEffects.push({x,y,radius:30,alpha:1,life:30}); if(isMobile&&navigator.vibrate&&vibrationEnabled) navigator.vibrate(200); Sound.sHit(); }
+    function updateDamageEffects(){ for(let i=damageEffects.length-1;i>=0;i--){ const d=damageEffects[i]; d.life--; d.alpha=d.life/30; d.radius-=0.5; if(d.life<=0) damageEffects.splice(i,1); } }
+    function drawDamageEffects(){ for(let e of damageEffects){ ctx.globalAlpha=e.alpha; ctx.strokeStyle="#e74c3c"; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(e.x,e.y,e.radius,0,Math.PI*2); ctx.stroke(); ctx.globalAlpha=1; } }
+    function startCountdown(){ countdownActive=true; gameRunning=true; countdownElement.style.display='block'; let count=3; countdownElement.textContent=count; Sound.sCountdown(); const interval=setInterval(()=>{ count--; if(count>0){ countdownElement.textContent=count; Sound.sCountdown(); }else{ clearInterval(interval); countdownElement.style.display='none'; Sound.resume(); Sound.setMasterMute(false); Sound.sStart(); countdownActive=false; requestAnimationFrame(gameLoop); } },1000); requestAnimationFrame(gameLoop); }
+    function backToStart(){ gameRunning=false; countdownActive=false; startScreen.style.display="flex"; gameOverScreen.style.display="none"; codeGenerationScreen.style.display="none"; settingsScreen.style.display="none"; adjustControlsScreen.style.display="none"; networkErrorScreen.style.display="none"; backToStartBtn.style.display="none"; startTotalScore.textContent=totalScore.toLocaleString(); }
+    function handleNetworkLoss(){ gameRunning=false; countdownActive=false; startScreen.style.display='none'; gameOverScreen.style.display='none'; settingsScreen.style.display='none'; adjustControlsScreen.style.display='none'; codeGenerationScreen.style.display='none'; networkErrorScreen.style.display='flex'; backToStartBtn.style.display='none'; Sound.sNetworkError(); }
+    function handleNetworkRestore(){ if(networkErrorScreen.style.display==='flex'){ networkErrorScreen.style.display='none'; backToStart(); } }
+    function updateNetworkStatus(online){ if(online){ networkStatus.classList.remove('offline'); networkStatusText.textContent='Online'; }else{ networkStatus.classList.add('offline'); networkStatusText.textContent='Offline'; } }
+    function gameLoop(timestamp){ if(!gameRunning) return; if(!navigator.onLine){ handleNetworkLoss(); return; } const delta=lastFrameTime?(timestamp-lastFrameTime):0; lastFrameTime=timestamp; ctx.clearRect(0,0,canvas.width,canvas.height); if(countdownActive){ updateRoad(); drawRoad(); updatePlayer(); drawPlayer(); requestAnimationFrame(gameLoop); return; } gameTime++; speedIncreaseTimer++; distance+=player.currentForwardSpeed*0.01; distanceSpan.textContent=distance.toFixed(2); speedValue.textContent=Math.round(player.currentForwardSpeed*10); if(gameTime%8===0) fireBullet(); if(speedIncreaseTimer%500===0 && player.currentForwardSpeed<player.maxSpeed){ player.currentForwardSpeed=Math.min(player.maxSpeed,player.currentForwardSpeed+0.3); player.currentSpeed=Math.min(player.maxSpeed,player.currentSpeed+0.2); Sound.sSpeedUp(); } zombieSpawnRate=Math.max(50,250-Math.floor(player.currentForwardSpeed*12)); if(Math.random()<0.002*player.currentForwardSpeed){ zombies.push({ x:road.x+20+Math.random()*(road.width-40-zombieWidth), y:-zombieHeight, width:zombieWidth, height:zombieHeight, speedX:0, speedY:(0.3+Math.random()*0.5)*zombieSpeedMultiplier, health:1, points:10, baseSpeed:0.5, isAngry:false, angerTimer:0 }); } if(timestamp-lastZombieHitTime>3000) zombieSpeedMultiplier=Math.max(1,zombieSpeedMultiplier-0.01); updateRoad(); drawRoad(); updatePlayer(); drawPlayer(); updateBullets(); drawBullets(); spawnZombies(); updateZombies(); drawZombies(); updateExplosions(); drawExplosions(); updateDamageEffects(); drawDamageEffects(); checkCollisions(); if(gameTime%2000===0) zombieSpawnRate=Math.max(150,zombieSpawnRate-5); requestAnimationFrame(gameLoop); }
+    
+    // Event listeners (standard)
+    function activate(btnOn,btnOff,flag){ if(flag){ btnOn.classList.add('active'); btnOff.classList.remove('active'); }else{ btnOn.classList.remove('active'); btnOff.classList.add('active'); } }
+    function setVibration(enabled){ vibrationEnabled=enabled; if(enabled){ vibrateOnBtn.classList.add('active'); vibrateOffBtn.classList.remove('active'); }else{ vibrateOnBtn.classList.remove('active'); vibrateOffBtn.classList.add('active'); } }
+    function toggleMasterIcon(muted){ const icon=document.querySelector('#soundToggleBtn img'); if(muted) icon.src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0id2hpdGUiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCI+PHBhdGggZD0iTTMgOXY2aDRsNSA1VjRMNyA5SDN6bTEzLjUgM2MwLTEuNzctMS4wMi0zLjI5LTIuNS00LjAzdjguMDUgYzEuNDgtLjczIDIuNS0yLjI1IDIuNS00LjAyek0xNCAzLjIzdjIuMDZjMi44OS44NiA1IDMuNTQgNSA2Ljcxcy0yLjExIDUuODUtNSA2LjcxdjIuMDZjNC4wMS0uOTEgNy00LjQ5IDctOC43N3MtMi45OS03Ljg2LTctOC43N3oiLz48L3N2Zz4="; else icon.src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0id2hpdGUiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCI+PHBhdGggZD0iTTMgOXY2aDRsNSA1VjRMNyA5SDN6bTEzLjUgM2MwLTEuNzctMS4yLTcuMjktMi41LTQuMDN2OC4wNSBjMS40OC0uNzMgMi41LTIuMjUgMi41LTQuMDJ6TTE0IDMuMjN2Mi4wNmMyLjg5Ljg2IDUgMy41NCA1IDYuNzFzLTIuMTEgNS44NS01IDYuNzF2Mi4wNmM0LjAxLS45MSA3LTQuNDkgNy04Ljc3cy0yLjk5LTcuODYtNy04Ljc3eiIvPjwvc3ZnPg=="; }
+    let firstInputHandled=false; function handleFirstInput(){ if(firstInputHandled) return; firstInputHandled=true; Sound.resume(); document.removeEventListener('pointerdown',handleFirstInput,true); document.removeEventListener('touchstart',handleFirstInput,true); document.removeEventListener('click',handleFirstInput,true); } document.addEventListener('pointerdown',handleFirstInput,{capture:true,passive:true}); document.addEventListener('touchstart',handleFirstInput,{capture:true,passive:true}); document.addEventListener('click',handleFirstInput,{capture:true,passive:true});
+    
+    window.addEventListener('load',()=>{ resizeCanvas(); loadControlPositions(); loadTotalScore(); updateNetworkStatus(navigator.onLine); activate(soundOnBtn,soundOffBtn,true); activate(autoSaveOnBtn,autoSaveOffBtn,autoSaveEnabled); toggleMasterIcon(false); setVibration(true); });
+    startBtn.addEventListener('click',()=>{ Sound.sButton(); startGame(); }); settingsBtn.addEventListener('click',()=>{ Sound.sButton(); startScreen.style.display='none'; settingsScreen.style.display='flex'; }); backToMainBtn.addEventListener('click',()=>{ Sound.sButton(); settingsScreen.style.display='none'; startScreen.style.display='flex'; }); restartBtn.addEventListener('click',()=>{ Sound.sButton(); startGame(); }); backToMenuBtn.addEventListener('click',()=>{ Sound.sButton(); backToStart(); }); backToStartBtn.addEventListener('click',()=>{ Sound.sButton(); backToStart(); }); adjustControlsBtn.addEventListener('click',()=>{ Sound.sButton(); settingsScreen.style.display='none'; adjustControlsScreen.style.display='flex'; isAdjustingControls=true; adjustControlsGrid.appendChild(leftBtn); adjustControlsGrid.appendChild(rightBtn); adjustControlsGrid.appendChild(forwardBtn); adjustControlsGrid.appendChild(backwardBtn); leftBtn.style.position='absolute'; rightBtn.style.position='absolute'; forwardBtn.style.position='absolute'; backwardBtn.style.position='absolute'; updateControlPositions(); }); saveControlsBtn.addEventListener('click',()=>{ Sound.sButton(); adjustControlsScreen.style.display='none'; settingsScreen.style.display='flex'; isAdjustingControls=false; document.getElementById('gameContainer').appendChild(leftBtn); document.getElementById('gameContainer').appendChild(rightBtn); document.getElementById('gameContainer').appendChild(forwardBtn); document.getElementById('gameContainer').appendChild(backwardBtn); leftBtn.style.position='absolute'; rightBtn.style.position='absolute'; forwardBtn.style.position='absolute'; backwardBtn.style.position='absolute'; updateControlPositions(); saveControlPositions(); }); resetControlsBtn.addEventListener('click',()=>{ Sound.sButton(); resetControlPositions(); }); controlSizeSlider.addEventListener('input',()=>{ controlSize=parseInt(controlSizeSlider.value); controlSizeValue.textContent=controlSize+'%'; updateControlSizes(); saveControlPositions(); }); vibrateOnBtn.addEventListener('click',()=>{ Sound.sButton(); setVibration(true); }); vibrateOffBtn.addEventListener('click',()=>{ Sound.sButton(); setVibration(false); }); let masterMuted=false; soundOnBtn.addEventListener('click',()=>{ Sound.resume(); Sound.setSfxEnabled(true); activate(soundOnBtn,soundOffBtn,true); Sound.sButton(); }); soundOffBtn.addEventListener('click',()=>{ Sound.setSfxEnabled(false); activate(soundOnBtn,soundOffBtn,false); }); soundToggleBtn.addEventListener('click',()=>{ masterMuted=!masterMuted; Sound.setMasterMute(masterMuted); toggleMasterIcon(masterMuted); if(!masterMuted){ Sound.resume(); Sound.sButton(); } }); cloudSaveBtn.addEventListener('click',()=>{ Sound.sButton(); loadGameDataFromFirebase(); }); autoSaveOnBtn.addEventListener('click',()=>{ autoSaveEnabled=true; activate(autoSaveOnBtn,autoSaveOffBtn,true); Sound.sButton(); saveGameDataToFirebase(); }); autoSaveOffBtn.addEventListener('click',()=>{ autoSaveEnabled=false; activate(autoSaveOnBtn,autoSaveOffBtn,false); Sound.sButton(); }); copyCodeBtn.addEventListener('click',()=>{ navigator.clipboard.writeText(generatedCode.textContent).then(()=>{ copySuccess.style.display='block'; setTimeout(()=>copySuccess.style.display='none',2000); }).catch(()=>{ const ta=document.createElement('textarea'); ta.value=generatedCode.textContent; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); copySuccess.style.display='block'; setTimeout(()=>copySuccess.style.display='none',2000); }); Sound.sButton(); }); codeBackToMenuBtn.addEventListener('click',()=>{ codeGenerationScreen.style.display='none'; fullResetGame(); startScreen.style.display='flex'; Sound.sButton(); }); codePlayAgainBtn.addEventListener('click',()=>{ codeGenerationScreen.style.display='none'; fullResetGame(); startScreen.style.display='flex'; Sound.sButton(); startGame(); }); networkRetryBtn.addEventListener('click',()=>{ Sound.sButton(); if(navigator.onLine) handleNetworkRestore(); else updateNetworkStatus(false); }); networkBackToMenuBtn.addEventListener('click',()=>{ Sound.sButton(); networkErrorScreen.style.display='none'; backToStart(); }); window.addEventListener('online',()=>{ updateNetworkStatus(true); handleNetworkRestore(); if(autoSaveEnabled) saveGameDataToFirebase(); }); window.addEventListener('offline',()=>{ updateNetworkStatus(false); handleNetworkLoss(); });
+    leftBtn.addEventListener('touchstart',e=>{ e.preventDefault(); player.movingLeft=true; },{passive:false}); leftBtn.addEventListener('touchend',e=>{ e.preventDefault(); player.movingLeft=false; },{passive:false}); rightBtn.addEventListener('touchstart',e=>{ e.preventDefault(); player.movingRight=true; },{passive:false}); rightBtn.addEventListener('touchend',e=>{ e.preventDefault(); player.movingRight=false; },{passive:false}); forwardBtn.addEventListener('touchstart',e=>{ e.preventDefault(); player.movingForward=true; },{passive:false}); forwardBtn.addEventListener('touchend',e=>{ e.preventDefault(); player.movingForward=false; },{passive:false}); backwardBtn.addEventListener('touchstart',e=>{ e.preventDefault(); player.movingBackward=true; },{passive:false}); backwardBtn.addEventListener('touchend',e=>{ e.preventDefault(); player.movingBackward=false; },{passive:false});
+    leftBtn.addEventListener('mousedown',()=>player.movingLeft=true); leftBtn.addEventListener('mouseup',()=>player.movingLeft=false); leftBtn.addEventListener('mouseleave',()=>player.movingLeft=false); rightBtn.addEventListener('mousedown',()=>player.movingRight=true); rightBtn.addEventListener('mouseup',()=>player.movingRight=false); rightBtn.addEventListener('mouseleave',()=>player.movingRight=false); forwardBtn.addEventListener('mousedown',()=>player.movingForward=true); forwardBtn.addEventListener('mouseup',()=>player.movingForward=false); forwardBtn.addEventListener('mouseleave',()=>player.movingForward=false); backwardBtn.addEventListener('mousedown',()=>player.movingBackward=true); backwardBtn.addEventListener('mouseup',()=>player.movingBackward=false); backwardBtn.addEventListener('mouseleave',()=>player.movingBackward=false);
+    document.addEventListener('keydown',e=>{ if(!gameRunning||countdownActive) return; if(e.key==='ArrowLeft'||e.key==='a') player.movingLeft=true; else if(e.key==='ArrowRight'||e.key==='d') player.movingRight=true; else if(e.key==='ArrowUp'||e.key==='w') player.movingForward=true; else if(e.key==='ArrowDown'||e.key==='s') player.movingBackward=true; });
+    document.addEventListener('keyup',e=>{ if(e.key==='ArrowLeft'||e.key==='a') player.movingLeft=false; else if(e.key==='ArrowRight'||e.key==='d') player.movingRight=false; else if(e.key==='ArrowUp'||e.key==='w') player.movingForward=false; else if(e.key==='ArrowDown'||e.key==='s') player.movingBackward=false; });
 </script>
 </body>
 </html>
