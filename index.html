@@ -5,12 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
   <title>Road Advancer · 3‑Ad Sequence & Random 9‑Digit Code</title>
   <!-- Ad SDKs -->
-  <!-- Adsgram -->
+  <!-- Adsgram (used for BOTH interstitial on open + second step replacement of Adexora) -->
   <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
   <!-- Monetag (Rewarded Interstitial) -->
   <script src='//libtl.com/sdk.js' data-zone='10866085' data-sdk='show_10866085'></script>
-  <!-- Adexora -->
-  <script src="https://adexora.com/cdn/ads.js?id=2023"></script>
+  <!-- Adexora completely removed: replaced by Adsgram for all second-step ads -->
   <style>
     * {
       box-sizing: border-box;
@@ -363,9 +362,9 @@
   </div>
   <div class="info-note">
     🎬 AD SEQUENCE: Click level → Adsgram interstitial → 1st ADVANCE → Monetag rewarded ad → 2nd ADVANCE → 
-    <span id="dynamicAdNote">Adexora rewarded ad</span> → 3s countdown → Level complete!<br>
+    <span id="dynamicAdNote">Adsgram interstitial ad</span> → 3s countdown → Level complete!<br>
     🏆 Finish Level 10 → Random 9‑digit code → Copy & Reset.<br>
-    ✨ <strong>LEVELS 3, 6, 9:</strong> Second ad uses <strong>Adsgram</strong> (replaces Adexora).
+    ✨ <strong>ALL LEVELS:</strong> Second ad uses <strong>Adsgram interstitial</strong> (Adexora fully replaced).
   </div>
 </div>
 
@@ -396,7 +395,7 @@
 </div>
 
 <script>
-  // ---------- AD INTEGRATIONS ----------
+  // ---------- AD INTEGRATIONS (Adexora removed, Adsgram used for all second-step ads) ----------
   let adsgramController = null;
   try {
     if (window.Adsgram) {
@@ -406,6 +405,7 @@
     }
   } catch(e) { console.warn(e); }
 
+  // Adsgram interstitial (used both for initial level open AND as second step ad)
   function showAdsgramInterstitial() {
     return new Promise((resolve) => {
       if (!adsgramController) {
@@ -438,27 +438,10 @@
     });
   }
 
-  function showAdexoraRewarded() {
-    return new Promise((resolve) => {
-      if (typeof window.showAdexora === 'function') {
-        window.showAdexora().then(() => {
-          resolve(true);
-        }).catch((err) => {
-          console.warn("Adexora error", err);
-          resolve(false);
-        });
-      } else {
-        console.warn("Adexora not ready");
-        resolve(false);
-      }
-    });
-  }
-
   // ---------- GAME CONFIG ----------
   const TOTAL_LEVELS = 10;
   const STEPS_PER_LEVEL = 2;
-  // SPECIAL LEVELS where Adexora is replaced by Adsgram (second step)
-  const SPECIAL_ADSGRAM_LEVELS = [3, 6, 9];
+  // SPECIAL LEVELS logic removed: Adexora is fully replaced by Adsgram for EVERY level's second step.
 
   let levels = [];
   let currentModalLevel = null;
@@ -493,7 +476,7 @@
 
   // Update dynamic note in footer for clarity
   function updateDynamicNote() {
-    if(dynamicAdNoteSpan) dynamicAdNoteSpan.innerText = "Adexora rewarded ad (levels 3,6,9 use Adsgram instead)";
+    if(dynamicAdNoteSpan) dynamicAdNoteSpan.innerText = "Adsgram interstitial ad (replaces Adexora completely)";
   }
   updateDynamicNote();
 
@@ -711,11 +694,7 @@
     }, 1000);
   }
 
-  // Determine which ad network to use for step 2 (second advance)
-  function shouldUseAdsgramForSecondAd(levelNum) {
-    return SPECIAL_ADSGRAM_LEVELS.includes(levelNum);
-  }
-
+  // Second step ad always uses Adsgram interstitial (Adexora fully replaced)
   async function onAdvance() {
     if (!requireOnline('Advance action')) return;
     if (countdownActive) return;
@@ -734,7 +713,7 @@
       setTimeout(() => closeModal(), 1000);
       return;
     }
-    // STEP 0 -> Monetag
+    // STEP 0 -> Monetag rewarded
     if (currentStepIndex === 0) {
       modalAdvanceBtn.disabled = true;
       modalStepMsg.innerText = '📢 Showing Monetag rewarded ad... Please wait.';
@@ -745,20 +724,12 @@
       refreshModalUI();
       modalAdvanceBtn.disabled = false;
     } 
-    // STEP 1 -> either Adexora or Adsgram (depending on level 3,6,9)
+    // STEP 1 -> ALWAYS Adsgram interstitial (Adexora replaced entirely)
     else if (currentStepIndex === 1) {
       modalAdvanceBtn.disabled = true;
-      const useAdsgramInstead = shouldUseAdsgramForSecondAd(levelNum);
-      
-      if (useAdsgramInstead) {
-        modalStepMsg.innerText = '📢 Showing Adsgram ad (replaces Adexora for this level) ... Please wait.';
-        const adShown = await showAdsgramInterstitial();
-        if (!adShown) showToast('⚠️ Adsgram ad failed, level will still complete.', true);
-      } else {
-        modalStepMsg.innerText = '📢 Showing Adexora rewarded ad... Please wait.';
-        const adShown = await showAdexoraRewarded();
-        if (!adShown) showToast('⚠️ Adexora ad failed, level will still complete.', true);
-      }
+      modalStepMsg.innerText = '📢 Showing Adsgram interstitial ad (second step) ... Please wait.';
+      const adShown = await showAdsgramInterstitial();
+      if (!adShown) showToast('⚠️ Adsgram ad failed, level will still complete.', true);
       currentStepIndex = 2;
       levelProgressSteps[levelNum] = currentStepIndex;
       refreshModalUI();
@@ -786,9 +757,7 @@
       modalStepCounter.innerText = `0 / 2 steps`;
       modalAdvanceBtn.disabled = false;
     } else if (currentStepIndex === 1) {
-      const useAdsgram = shouldUseAdsgramForSecondAd(levelNum);
-      const adName = useAdsgram ? "Adsgram" : "Adexora rewarded";
-      modalStepMsg.innerText = `🎬 Step 2/2: Watch ${adName} ad → then ADVANCE`;
+      modalStepMsg.innerText = `🎬 Step 2/2: Watch Adsgram interstitial ad → then ADVANCE`;
       modalStepCounter.innerText = `1 / 2 steps`;
       modalAdvanceBtn.disabled = false;
     } else if (currentStepIndex >= 2) {
@@ -809,7 +778,7 @@
       showToast(`✅ Level ${levelNumber} already completed`, false);
       return false;
     }
-    modalStepMsg.innerText = '📢 Loading Adsgram ad...';
+    modalStepMsg.innerText = '📢 Loading Adsgram interstitial...';
     const adShown = await showAdsgramInterstitial();
     if (!adShown) showToast('⚠️ Adsgram ad skipped or failed', false);
     
