@@ -4,10 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Highway Journey — Relaxing Road Trip | Auto Next Level After Link Return</title>
-    <!-- Adsgram SDK with new Block ID int-24334 -->
+    <!-- Adsgram SDK with Block ID int-24334 -->
     <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
-    <!-- Monetag SDK (Rewarded Interstitial) with updated Zone ID 10866085 -->
+    <!-- Monetag SDK (Rewarded Interstitial) with Zone ID 10866085 -->
     <script src="//libtl.com/sdk.js" data-zone="10866085" data-sdk="show_10866085"></script>
+    <!-- Giga Pub Ad Script (New 3rd Ad Provider) -->
+    <script src="https://ad.gigapub.tech/script?id=6337"></script>
     <style>
         * {
             margin: 0;
@@ -453,7 +455,7 @@
 <div class="game-container">
     <div class="road-header">
         <div class="title">🛣️ HIGHWAY JOURNEY 🚗</div>
-        <div class="subtitle">✨ 3 Ads Before Every Stage: 2x Adsgram + Monetag ✨</div>
+        <div class="subtitle">✨ 3 Ads Before Every Stage: Adsgram + Monetag + Giga Pub ✨</div>
         <div class="badge-pattern">🔗 NEXT STAGE: Open link → Return → Auto-starts!</div>
     </div>
     <div class="level-list" id="levelListContainer"></div>
@@ -529,9 +531,9 @@
     let adController = null;
     let adInitialized = false;
     
-    // Updated Monetag Zone ID
+    // Monetag Zone ID
     const MONETAG_ZONE = "10866085";
-    // Updated Adsgram Block ID
+    // Adsgram Block ID
     const ADSGRAM_BLOCK = "int-24334";
     
     const EXTERNAL_NEXT_LEVEL_URL = "https://www.profitablecpmratenetwork.com/xan60uuv?key=369dc68341066c06e3d471f3785f73fb";
@@ -605,7 +607,7 @@
         localStorage.setItem('highwayJourneyProgress', JSON.stringify({ unlockedLevel: currentUnlockedLevel }));
     }
     
-    // ---------- ADS INIT (Updated Block ID) ----------
+    // ---------- ADS INIT (Adsgram, Monetag, Giga) ----------
     function initAdsgram() {
         try {
             if(typeof window.Adsgram !== 'undefined') {
@@ -618,7 +620,7 @@
     function withNetworkGuard(fn, adName) {
         return new Promise(async (resolve) => {
             if(!isNetworkOnline()) { showOfflineExitAndCloseGame(`📡 No internet for ${adName}.`); resolve(); return; }
-            const timeoutId = setTimeout(() => { console.warn(`${adName} timeout`); resolve(); }, 12000);
+            const timeoutId = setTimeout(() => { console.warn(`${adName} timeout`); resolve(); }, 14000);
             try {
                 await fn();
                 clearTimeout(timeoutId);
@@ -636,7 +638,6 @@
         return withNetworkGuard(async () => { if(adInitialized && adController) await adController.show(); }, "Adsgram");
     }
     
-    // Monetag ad with dynamic zone ID
     function showMonetagAd() {
         return withNetworkGuard(async () => {
             const monetagFunction = window[`show_${MONETAG_ZONE}`];
@@ -645,7 +646,26 @@
         }, "Monetag");
     }
     
-    // Ad UI 
+    // NEW: Giga Pub Ad Integration (Third Ad)
+    function showGigaAd() {
+        return withNetworkGuard(async () => {
+            // Ensure window.showGiga is available (script already loaded in head)
+            if (typeof window.showGiga === 'function') {
+                await window.showGiga();
+            } else {
+                console.warn("showGiga not ready, waiting a bit...");
+                // Small delay to allow script initialization
+                await new Promise(resolve => setTimeout(resolve, 600));
+                if (typeof window.showGiga === 'function') {
+                    await window.showGiga();
+                } else {
+                    throw new Error("Giga Pub ad library not loaded");
+                }
+            }
+        }, "Giga Pub");
+    }
+    
+    // Ad UI Components
     const adSeqPanel = document.getElementById('adSequencePanel');
     const adStepMsg = document.getElementById('adStepMessage');
     const adDescription = document.getElementById('adDescription');
@@ -677,8 +697,11 @@
         });
     }
     
+    // Updated Ad Sequence: Adsgram -> Monetag -> Giga Pub
     async function runFullAdSequence() {
         if(!isNetworkOnline()) throw new Error("offline");
+        
+        // Step 1: Adsgram
         showAdSequenceUI("📢 Step 1/3", "Showing travel ad (Adsgram)");
         await showAdsgramAd();
         if(!isNetworkOnline()) throw new Error("offline");
@@ -686,6 +709,7 @@
         await waitForNextStepButton();
         if(!isNetworkOnline()) throw new Error("offline");
         
+        // Step 2: Monetag
         showAdSequenceUI("💰 Step 2/3", "Reward ad (Monetag)");
         await showMonetagAd();
         if(!isNetworkOnline()) throw new Error("offline");
@@ -693,9 +717,12 @@
         await waitForNextStepButton();
         if(!isNetworkOnline()) throw new Error("offline");
         
-        showAdSequenceUI("🎬 Step 3/3", "Final ad (Adsgram)");
-        await showAdsgramAd();
+        // Step 3: Giga Pub (NEW)
+        showAdSequenceUI("🎬 Step 3/3", "Final ad (Giga Pub)");
+        await showGigaAd();
         if(!isNetworkOnline()) throw new Error("offline");
+        
+        // All ads done
         showAdSequenceUI("✅ Ad Sequence Done", "Starting journey now!");
         await new Promise(r => setTimeout(r, 400));
         hideAdSequenceUI();
@@ -894,7 +921,7 @@
             card.innerHTML = `
                 <div class="level-number">${i}</div>
                 <div class="level-info">
-                    <div class="level-name">Stage ${i} <span style="font-size:9px;">🎬 2x Adsgram + 🎁 Monetag</span></div>
+                    <div class="level-name">Stage ${i} <span style="font-size:9px;">🎬 Adsgram + Monetag + Giga</span></div>
                     <div class="level-requirement">5 journey tasks</div>
                 </div>
                 <div class="level-status">${statusIcon}</div>
