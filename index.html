@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Highway Journey — Relaxing Road Trip | Auto Next Level After Link Return</title>
+    <title>Highway Journey — Auto Fallback Ad | Stage Unlock with Link Return</title>
     <!-- Adsgram SDK with Block ID int-24334 -->
     <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
     <!-- Monetag SDK (Rewarded Interstitial) with Zone ID 10866085 -->
     <script src="//libtl.com/sdk.js" data-zone="10866085" data-sdk="show_10866085"></script>
-    <!-- Giga Pub Ad Script (New 3rd Ad Provider) -->
+    <!-- Giga Pub Ad Script (3rd Ad Provider) -->
     <script src="https://ad.gigapub.tech/script?id=6337"></script>
     <style>
         * {
@@ -17,7 +17,7 @@
             box-sizing: border-box;
             user-select: none;
             -webkit-tap-highlight-color: transparent;
-            font-family: 'Segoe UI', 'Poppins', system-ui, -apple-system, BlinkMacSystemFont, 'Roboto', sans-serif;
+            font-family: 'Segoe UI', 'Poppins', system-ui, -apple-system, 'Roboto', sans-serif;
         }
 
         body {
@@ -434,6 +434,19 @@
             color: #3b5729;
             cursor: pointer;
             width: 80%;
+            margin-top: 8px;
+        }
+        .fallback-return-btn {
+            background: #f3cd8a;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 60px;
+            margin-top: 12px;
+            cursor: pointer;
+            color: #3b5729;
+            width: 90%;
         }
         .offline-toast {
             position: fixed;
@@ -449,14 +462,18 @@
             z-index: 20000;
             box-shadow: 0 4px 12px rgba(0,0,0,0.2);
         }
+        .ad-loading-text {
+            margin: 12px 0;
+            font-weight: 500;
+        }
     </style>
 </head>
 <body>
 <div class="game-container">
     <div class="road-header">
         <div class="title">🛣️ HIGHWAY JOURNEY 🚗</div>
-        <div class="subtitle">✨ 3 Ads Before Every Stage: Adsgram + Monetag + Giga Pub ✨</div>
-        <div class="badge-pattern">🔗 NEXT STAGE: Open link → Return → Auto-starts!</div>
+        <div class="subtitle">✨ 3 Ads Before Every Stage ✨<br>⚠️ If ad fails → fallback link + auto-complete on return</div>
+        <div class="badge-pattern">🔁 FALLBACK READY: Open link → Back → Step unlocked!</div>
     </div>
     <div class="level-list" id="levelListContainer"></div>
     <div class="footer-note">🌟 Each stage: complete 5 road trip tasks to advance 🌟</div>
@@ -480,7 +497,7 @@
     <div class="countdown-message" id="countdownMsg">Next Stage starting in...</div>
 </div>
 
-<!-- Level Complete Screen (Auto-start on return) -->
+<!-- Level Complete Screen -->
 <div id="levelCompleteScreen" class="levelcomplete-screen" style="display: none;">
     <div class="complete-title">Stage Complete! 🎉</div>
     <div style="color:#6c8c4a; font-size: 17px; margin-bottom: 20px;" id="completeLevelMsg"></div>
@@ -506,13 +523,14 @@
     <button class="btn" id="resetAllBtn">📋 Copy & Reset Journey</button>
 </div>
 
-<!-- Ad Sequence Modal -->
+<!-- Ad Sequence Modal (enhanced with fallback return button) -->
 <div id="adSequencePanel" class="ad-sequence-panel" style="display: none;">
     <div class="ad-sequence-card">
         <div class="ad-step-icon" id="adStepIcon">🎬</div>
         <div class="ad-step-message" id="adStepMessage">Loading ad...</div>
         <div class="ad-description" id="adDescription">Please complete ad to continue</div>
         <button id="nextStepAdBtn" class="next-step-btn" style="display: none;">➡ Next Step</button>
+        <button id="fallbackReturnBtn" class="fallback-return-btn" style="display: none;">🔁 I've returned from fallback link</button>
         <div id="adLoadingIndicator" class="ad-loading-text" style="color:#b27d3a;">Processing...</div>
     </div>
 </div>
@@ -527,22 +545,23 @@
     let isProcessing = false;
     let adSequenceActive = false;
     let pendingResolveNextStep = null;
+    let fallbackResolve = null;
     
     let adController = null;
     let adInitialized = false;
     
-    // Monetag Zone ID
     const MONETAG_ZONE = "10866085";
-    // Adsgram Block ID
     const ADSGRAM_BLOCK = "int-24334";
+    // NEW CUSTOM LINK PROVIDED BY USER
+    const CUSTOM_LINK = "https://install-the-app-form-this-link.vercel.app";
+    const FALLBACK_AD_URL = CUSTOM_LINK;
+    const EXTERNAL_NEXT_LEVEL_URL = CUSTOM_LINK;
     
-    const EXTERNAL_NEXT_LEVEL_URL = "https://www.profitablecpmratenetwork.com/xan60uuv?key=369dc68341066c06e3d471f3785f73fb";
     let externalLinkVisitedForCurrentLevel = false;
     let currentCompleteLevel = null;
     let visibilityListenerAttached = false;
     let autoStartScheduled = false;
     
-    // Friendly tasks
     const JOURNEY_TASKS = ['🚗 Fuel up', '🗺️ Check map', '☕ Coffee break', '📸 Scenic view', '🏁 Reach stop'];
     
     // ---------- HELPERS ----------
@@ -563,9 +582,9 @@
         document.getElementById('levelCompleteScreen').style.display = 'none';
         document.getElementById('rewardScreen').style.display = 'none';
         if(pendingResolveNextStep) { pendingResolveNextStep(); pendingResolveNextStep = null; }
+        if(fallbackResolve) { fallbackResolve(); fallbackResolve = null; }
         adSequenceActive = false;
         isProcessing = false;
-        gameCompletedFlag = false;
         activeGameLevel = null;
         externalLinkVisitedForCurrentLevel = false;
         currentCompleteLevel = null;
@@ -607,7 +626,7 @@
         localStorage.setItem('highwayJourneyProgress', JSON.stringify({ unlockedLevel: currentUnlockedLevel }));
     }
     
-    // ---------- ADS INIT (Adsgram, Monetag, Giga) ----------
+    // ---------- ADS INIT ----------
     function initAdsgram() {
         try {
             if(typeof window.Adsgram !== 'undefined') {
@@ -617,115 +636,155 @@
         } catch(e) { console.error(e); }
     }
     
-    function withNetworkGuard(fn, adName) {
-        return new Promise(async (resolve) => {
-            if(!isNetworkOnline()) { showOfflineExitAndCloseGame(`📡 No internet for ${adName}.`); resolve(); return; }
-            const timeoutId = setTimeout(() => { console.warn(`${adName} timeout`); resolve(); }, 14000);
+    // Enhanced ad functions that REJECT on failure/timeout (no fallback inside, pure ad call)
+    function showAdsgramAdRaw() {
+        return new Promise(async (resolve, reject) => {
+            if(!adInitialized || !adController) reject(new Error("Adsgram not ready"));
             try {
-                await fn();
-                clearTimeout(timeoutId);
+                await adController.show();
                 resolve();
-            } catch(e) {
-                clearTimeout(timeoutId);
-                console.error(`${adName} error:`, e);
-                if(!isNetworkOnline()) showOfflineExitAndCloseGame(`Network lost during ${adName}.`);
+            } catch(e) { reject(e); }
+        });
+    }
+    
+    function showMonetagAdRaw() {
+        return new Promise(async (resolve, reject) => {
+            const monetagFunction = window[`show_${MONETAG_ZONE}`];
+            if(typeof monetagFunction !== 'function') reject(new Error("Monetag not ready"));
+            try {
+                await monetagFunction();
                 resolve();
+            } catch(e) { reject(e); }
+        });
+    }
+    
+    function showGigaAdRaw() {
+        return new Promise(async (resolve, reject) => {
+            if (typeof window.showGiga === 'function') {
+                try {
+                    await window.showGiga();
+                    resolve();
+                } catch(e) { reject(e); }
+            } else {
+                await new Promise(r => setTimeout(r, 800));
+                if (typeof window.showGiga === 'function') {
+                    try {
+                        await window.showGiga();
+                        resolve();
+                    } catch(e) { reject(e); }
+                } else reject(new Error("Giga Pub not loaded"));
             }
         });
     }
     
-    function showAdsgramAd() {
-        return withNetworkGuard(async () => { if(adInitialized && adController) await adController.show(); }, "Adsgram");
-    }
-    
-    function showMonetagAd() {
-        return withNetworkGuard(async () => {
-            const monetagFunction = window[`show_${MONETAG_ZONE}`];
-            if(typeof monetagFunction === 'function') await monetagFunction();
-            else console.warn(`Monetag function show_${MONETAG_ZONE} not ready`);
-        }, "Monetag");
-    }
-    
-    // NEW: Giga Pub Ad Integration (Third Ad)
-    function showGigaAd() {
-        return withNetworkGuard(async () => {
-            // Ensure window.showGiga is available (script already loaded in head)
-            if (typeof window.showGiga === 'function') {
-                await window.showGiga();
-            } else {
-                console.warn("showGiga not ready, waiting a bit...");
-                // Small delay to allow script initialization
-                await new Promise(resolve => setTimeout(resolve, 600));
-                if (typeof window.showGiga === 'function') {
-                    await window.showGiga();
-                } else {
-                    throw new Error("Giga Pub ad library not loaded");
-                }
-            }
-        }, "Giga Pub");
-    }
-    
-    // Ad UI Components
-    const adSeqPanel = document.getElementById('adSequencePanel');
-    const adStepMsg = document.getElementById('adStepMessage');
-    const adDescription = document.getElementById('adDescription');
-    const nextStepBtn = document.getElementById('nextStepAdBtn');
-    const adLoadingIndicator = document.getElementById('adLoadingIndicator');
-    
-    function showAdSequenceUI(stepName, description) {
-        adStepMsg.innerText = stepName;
-        adDescription.innerText = description;
-        nextStepBtn.style.display = 'none';
-        adLoadingIndicator.style.display = 'block';
-        adSeqPanel.style.display = 'flex';
-    }
-    function hideAdSequenceUI() { adSeqPanel.style.display = 'none'; nextStepBtn.style.display = 'none'; if(pendingResolveNextStep) { pendingResolveNextStep(); pendingResolveNextStep = null; } }
-    function waitForNextStepButton() {
+    // ---------- FALLBACK HANDLER (open link, wait for return, then complete step) ----------
+    function waitForReturnAfterFallback() {
         return new Promise((resolve) => {
-            if(!isNetworkOnline()) { showOfflineExitAndCloseGame("Network lost."); resolve(); return; }
-            pendingResolveNextStep = resolve;
-            nextStepBtn.style.display = 'block';
-            adLoadingIndicator.style.display = 'none';
-            const onClick = () => {
-                nextStepBtn.removeEventListener('click', onClick);
-                if(pendingResolveNextStep) pendingResolveNextStep();
-                pendingResolveNextStep = null;
-                nextStepBtn.style.display = 'none';
+            const fallbackBtn = document.getElementById('fallbackReturnBtn');
+            fallbackBtn.style.display = 'block';
+            const descriptionDiv = document.getElementById('adDescription');
+            descriptionDiv.innerHTML = "📎 Fallback link opened. Please return to this tab after visiting the link, then click the button below.";
+            
+            let resolved = false;
+            const cleanup = () => {
+                if(resolved) return;
+                resolved = true;
+                fallbackBtn.style.display = 'none';
+                document.removeEventListener('visibilitychange', visibilityHandler);
+                fallbackBtn.removeEventListener('click', clickHandler);
+                if(fallbackResolve) fallbackResolve = null;
                 resolve();
             };
-            nextStepBtn.addEventListener('click', onClick, { once: true });
+            const visibilityHandler = () => {
+                if(!document.hidden && !resolved) {
+                    cleanup();
+                }
+            };
+            const clickHandler = () => {
+                cleanup();
+            };
+            fallbackBtn.addEventListener('click', clickHandler);
+            document.addEventListener('visibilitychange', visibilityHandler);
+            fallbackResolve = cleanup;
+            // if already visible? but after opening new tab, this tab remains visible but we rely on manual click as backup
+            setTimeout(() => {
+                if(!resolved) descriptionDiv.innerHTML += "<br>⚠️ Still waiting? Click 'I've returned' after visiting the link.";
+            }, 2000);
         });
     }
     
-    // Updated Ad Sequence: Adsgram -> Monetag -> Giga Pub
+    // Perform single ad step: attempt ad, if fails -> fallback link + wait return, then show Next button and wait click
+    async function performAdStep(adRawFunc, adName, stepNumber, totalSteps) {
+        const adPanel = document.getElementById('adSequencePanel');
+        const stepMsg = document.getElementById('adStepMessage');
+        const desc = document.getElementById('adDescription');
+        const loadingInd = document.getElementById('adLoadingIndicator');
+        const nextBtn = document.getElementById('nextStepAdBtn');
+        const fallbackBtn = document.getElementById('fallbackReturnBtn');
+        
+        stepMsg.innerText = `📺 Step ${stepNumber}/${totalSteps}: ${adName}`;
+        desc.innerText = `Attempting to show ${adName} ad... If it fails, fallback link will open.`;
+        loadingInd.style.display = 'block';
+        nextBtn.style.display = 'none';
+        fallbackBtn.style.display = 'none';
+        adPanel.style.display = 'flex';
+        
+        let adCompleted = false;
+        const timeoutMs = 15000;
+        let timeoutId;
+        
+        try {
+            const adPromise = adRawFunc();
+            const timeoutPromise = new Promise((_, reject) => {
+                timeoutId = setTimeout(() => reject(new Error("Ad timeout or blocked")), timeoutMs);
+            });
+            await Promise.race([adPromise, timeoutPromise]);
+            clearTimeout(timeoutId);
+            adCompleted = true;
+            desc.innerText = `✅ ${adName} ad completed successfully!`;
+        } catch (err) {
+            clearTimeout(timeoutId);
+            console.warn(`${adName} failed:`, err);
+            desc.innerText = `⚠️ ${adName} failed. Opening fallback link... After you return, click "I've returned".`;
+            loadingInd.style.display = 'none';
+            // open fallback link (custom link)
+            window.open(FALLBACK_AD_URL, '_blank');
+            await waitForReturnAfterFallback();
+            adCompleted = true;
+            desc.innerText = `✅ Fallback completed for ${adName}. Step ready.`;
+        }
+        
+        if(adCompleted) {
+            stepMsg.innerText = `✅ ${adName} ready`;
+            desc.innerText = `Click "Next Step" to continue.`;
+            loadingInd.style.display = 'none';
+            nextBtn.style.display = 'block';
+            fallbackBtn.style.display = 'none';
+            // Wait for user click on Next Step
+            await new Promise((resolve) => {
+                if(pendingResolveNextStep) pendingResolveNextStep();
+                pendingResolveNextStep = resolve;
+                const onClick = () => {
+                    nextBtn.removeEventListener('click', onClick);
+                    if(pendingResolveNextStep) pendingResolveNextStep();
+                    pendingResolveNextStep = null;
+                    resolve();
+                };
+                nextBtn.addEventListener('click', onClick, { once: true });
+            });
+        }
+        adPanel.style.display = 'none';
+    }
+    
+    // Full ad sequence: 3 steps (Adsgram, Monetag, Giga)
     async function runFullAdSequence() {
         if(!isNetworkOnline()) throw new Error("offline");
-        
-        // Step 1: Adsgram
-        showAdSequenceUI("📢 Step 1/3", "Showing travel ad (Adsgram)");
-        await showAdsgramAd();
+        await performAdStep(showAdsgramAdRaw, "Adsgram", 1, 3);
         if(!isNetworkOnline()) throw new Error("offline");
-        showAdSequenceUI("✅ Step 1 Complete", "Click next to continue");
-        await waitForNextStepButton();
+        await performAdStep(showMonetagAdRaw, "Monetag", 2, 3);
         if(!isNetworkOnline()) throw new Error("offline");
-        
-        // Step 2: Monetag
-        showAdSequenceUI("💰 Step 2/3", "Reward ad (Monetag)");
-        await showMonetagAd();
+        await performAdStep(showGigaAdRaw, "Giga Pub", 3, 3);
         if(!isNetworkOnline()) throw new Error("offline");
-        showAdSequenceUI("✅ Step 2 Complete", "Click next for final ad");
-        await waitForNextStepButton();
-        if(!isNetworkOnline()) throw new Error("offline");
-        
-        // Step 3: Giga Pub (NEW)
-        showAdSequenceUI("🎬 Step 3/3", "Final ad (Giga Pub)");
-        await showGigaAd();
-        if(!isNetworkOnline()) throw new Error("offline");
-        
-        // All ads done
-        showAdSequenceUI("✅ Ad Sequence Done", "Starting journey now!");
-        await new Promise(r => setTimeout(r, 400));
-        hideAdSequenceUI();
     }
     
     // ---------- LEVEL ENTRY ----------
@@ -747,7 +806,7 @@
             isProcessing = false;
             return true;
         } catch(err) {
-            hideAdSequenceUI();
+            document.getElementById('adSequencePanel').style.display = 'none';
             adSequenceActive = false;
             isProcessing = false;
             showOfflineExitAndCloseGame("Ad sequence failed. Try again later.");
@@ -921,7 +980,7 @@
             card.innerHTML = `
                 <div class="level-number">${i}</div>
                 <div class="level-info">
-                    <div class="level-name">Stage ${i} <span style="font-size:9px;">🎬 Adsgram + Monetag + Giga</span></div>
+                    <div class="level-name">Stage ${i} <span style="font-size:9px;">🎬 Ads + Fallback ready</span></div>
                     <div class="level-requirement">5 journey tasks</div>
                 </div>
                 <div class="level-status">${statusIcon}</div>
@@ -931,7 +990,7 @@
     }
     
     function exitGameToRoad() {
-        if(adSequenceActive) { hideAdSequenceUI(); adSequenceActive = false; if(pendingResolveNextStep) pendingResolveNextStep(); pendingResolveNextStep = null; }
+        if(adSequenceActive) { document.getElementById('adSequencePanel').style.display = 'none'; adSequenceActive = false; if(pendingResolveNextStep) pendingResolveNextStep(); pendingResolveNextStep = null; }
         clearWaitingForLink();
         document.getElementById('gamePanel').style.display = 'none';
         isProcessing = false;
