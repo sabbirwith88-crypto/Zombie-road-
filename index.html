@@ -269,7 +269,7 @@ function render(){
   $('#goPacket').onclick=function(){go('packet')};
 
   $('#v-packet').innerHTML='<h1 class="pt">Packets</h1><p class="sub">Pick a task and unlock its Red Packet code.</p>'+(tasks.length?tasks.map(function(t){
-    return '<div class="card task"><h3 class="th">'+LOGO+'<span>'+esc(t.title)+'</span></h3><p>'+esc(t.desc)+'</p><div class="m"><span class="pill">Left: '+(t.limit-(t.used||0))+'</span><button class="btn b-gold" data-code="'+t.id+'">Get Code</button></div></div>'}).join(''):'<div class="empty">'+PKT+'<br>No packets available right now.<br>Please check back later.</div>');
+    return '<div class="card task"><h3 class="th">'+LOGO+'<span>'+esc(t.title)+'</span></h3><p>'+esc(t.desc)+'</p><div class="m"><span class="pill">Left: '+(t.limit-(t.used||0))+'</span><button class="btn b-gold" data-code="'+t.id+'">Get Code</button></div></div>'}).join(''):'<div class="empty">'+IC.pkt+'<br>No packets available right now.<br>Please check back later.</div>');
   [].forEach.call(document.querySelectorAll('[data-code]'),function(b){b.onclick=function(){openCode(b.dataset.code)}});
 
   var link=CONFIG.botLink+'?startapp='+S.uid;
