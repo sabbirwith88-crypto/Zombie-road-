@@ -1,1019 +1,384 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Highway Journey — Auto Fallback Ad | Stage Unlock with Link Return</title>
-    <!-- Adsgram SDK with Block ID int-24334 -->
-    <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
-    <!-- Monetag SDK (Rewarded Interstitial) with Zone ID 10866085 -->
-    <script src="//libtl.com/sdk.js" data-zone="10866085" data-sdk="show_10866085"></script>
-    <!-- Giga Pub Ad Script (3rd Ad Provider) -->
-    <script src="https://ad.gigapub.tech/script?id=6337"></script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            user-select: none;
-            -webkit-tap-highlight-color: transparent;
-            font-family: 'Segoe UI', 'Poppins', system-ui, -apple-system, 'Roboto', sans-serif;
-        }
-
-        body {
-            min-height: 100vh;
-            background: linear-gradient(145deg, #c8e6df 0%, #a2c9b2 100%);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 16px;
-        }
-
-        .game-container {
-            width: 100%;
-            max-width: 500px;
-            background: #fef9e6;
-            border-radius: 48px;
-            box-shadow: 0 20px 35px rgba(0, 0, 0, 0.15), inset 0 1px 3px rgba(255,255,200,0.8);
-            overflow: hidden;
-            border: 1px solid #ffe2b5;
-        }
-
-        .road-header {
-            background: #ffefcf;
-            padding: 20px 16px;
-            text-align: center;
-            border-bottom: 3px solid #f3b33d;
-        }
-
-        .title {
-            font-size: 28px;
-            font-weight: 800;
-            color: #2c6e49;
-            text-shadow: 1px 1px 0 #e9d6a7;
-            letter-spacing: 1px;
-            background: rgba(255,245,215,0.9);
-            display: inline-block;
-            padding: 5px 24px;
-            border-radius: 60px;
-        }
-
-        .subtitle {
-            color: #bc8f4b;
-            font-size: 12px;
-            margin-top: 8px;
-            font-weight: 600;
-            background: #fff2df;
-            display: inline-block;
-            padding: 4px 14px;
-            border-radius: 30px;
-        }
-
-        .badge-pattern {
-            background: #e6dcc5;
-            display: inline-block;
-            padding: 5px 14px;
-            border-radius: 40px;
-            font-size: 10px;
-            margin-top: 8px;
-            color: #8b6946;
-            font-weight: 600;
-        }
-
-        .level-list {
-            max-height: 460px;
-            overflow-y: auto;
-            padding: 16px 12px;
-            background: #faf3e2;
-            scrollbar-width: thin;
-        }
-        .level-list::-webkit-scrollbar {
-            width: 4px;
-        }
-        .level-list::-webkit-scrollbar-track {
-            background: #e7dbbc;
-            border-radius: 10px;
-        }
-        .level-list::-webkit-scrollbar-thumb {
-            background: #c2a15b;
-            border-radius: 10px;
-        }
-
-        .level-card {
-            background: #ffffffdd;
-            backdrop-filter: blur(2px);
-            margin-bottom: 12px;
-            border-radius: 28px;
-            padding: 12px 18px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            border-left: 6px solid #f3b33d;
-            border-right: 1px solid #f3d9a4;
-            cursor: pointer;
-            transition: all 0.1s ease;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-        }
-        .level-card:active {
-            transform: scale(0.97);
-            background: #fff7e8;
-        }
-        .level-card.locked {
-            opacity: 0.6;
-            border-left-color: #bdb291;
-            cursor: not-allowed;
-            pointer-events: none;
-            filter: grayscale(0.1);
-        }
-        .level-number {
-            font-size: 28px;
-            font-weight: 800;
-            color: #f3b33d;
-            background: #fff0db;
-            width: 56px;
-            height: 56px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 24px;
-        }
-        .level-info {
-            flex: 1;
-            padding-left: 14px;
-        }
-        .level-name {
-            font-size: 16px;
-            font-weight: 700;
-            color: #4a6b3c;
-        }
-        .level-requirement {
-            font-size: 10px;
-            color: #b88b44;
-            margin-top: 4px;
-        }
-        .level-status {
-            font-size: 20px;
-        }
-
-        /* Game Panel (friendly style) */
-        .game-panel {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(230, 245, 225, 0.97);
-            backdrop-filter: blur(14px);
-            z-index: 10000;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            animation: fadeIn 0.2s ease;
-        }
-        .game-card {
-            background: #ffffffea;
-            border-radius: 56px;
-            padding: 28px 20px;
-            width: 100%;
-            max-width: 380px;
-            text-align: center;
-            border: 2px solid #ffcd7e;
-            box-shadow: 0 20px 35px rgba(0, 0, 0, 0.1);
-        }
-        .game-level-title {
-            font-size: 32px;
-            font-weight: 800;
-            color: #f3a92c;
-            margin-bottom: 12px;
-        }
-        .instruction-box {
-            background: #fff0dd;
-            border-radius: 32px;
-            padding: 12px;
-            margin: 8px 0 12px;
-            color: #9b6e3c;
-            font-size: 14px;
-            font-weight: 600;
-            border: 1px solid #f3cd8a;
-        }
-        .game-progress {
-            background: #f9efdf;
-            border-radius: 36px;
-            padding: 10px;
-            margin: 12px 0;
-            color: #a67634;
-            font-weight: 700;
-        }
-        .buttons-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 14px;
-            margin: 20px 0;
-        }
-        .action-btn {
-            background: linear-gradient(135deg, #f3cd8a, #f3bc5e);
-            border: none;
-            padding: 14px 0;
-            font-size: 15px;
-            font-weight: 700;
-            border-radius: 60px;
-            color: #3b5729;
-            cursor: pointer;
-            transition: all 0.07s linear;
-            box-shadow: 0 4px 0 #b27d3a;
-        }
-        .action-btn:active {
-            transform: translateY(2px);
-            box-shadow: 0 2px 0 #b27d3a;
-        }
-        .action-btn.disabled-btn {
-            opacity: 0.6;
-            transform: none;
-            pointer-events: none;
-            filter: grayscale(0.1);
-        }
-        .complete-status {
-            background: #e7f0da;
-            padding: 8px;
-            border-radius: 30px;
-            color: #6d8f4b;
-            font-weight: 600;
-            font-size: 12px;
-        }
-        .game-close-btn {
-            background: #f2e5d2;
-            color: #b77e32;
-            padding: 10px 18px;
-            border: none;
-            border-radius: 40px;
-            font-size: 14px;
-            font-weight: 600;
-            margin-top: 14px;
-            cursor: pointer;
-        }
-        /* countdown overlay */
-        .countdown-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(60, 80, 50, 0.96);
-            backdrop-filter: blur(12px);
-            z-index: 11000;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            color: #fff3cf;
-        }
-        .countdown-number {
-            font-size: 100px;
-            background: linear-gradient(45deg, #ffdd99, #f3b33d);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-            animation: pulse 0.5s ease-out;
-            font-weight: 800;
-        }
-        @keyframes pulse {
-            0% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.2); opacity: 0.9; }
-            100% { transform: scale(1); opacity: 1; }
-        }
-        .countdown-message {
-            font-size: 20px;
-            margin-top: 20px;
-            color: #ffeaac;
-            text-align: center;
-            font-weight: 600;
-        }
-        /* level complete screen */
-        .levelcomplete-screen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(145deg, #d9e6c3, #c2d8aa);
-            z-index: 9000;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            padding: 20px;
-        }
-        .complete-title {
-            font-size: 44px;
-            font-weight: 900;
-            color: #f3b33d;
-            text-shadow: 2px 2px 0 #fff1cf;
-            margin-bottom: 12px;
-        }
-        .btn {
-            background: linear-gradient(45deg, #f3cd8a, #efb853);
-            border: none;
-            padding: 12px 28px;
-            font-size: 18px;
-            font-weight: 700;
-            border-radius: 60px;
-            margin: 8px;
-            cursor: pointer;
-            color: #3e5e2c;
-            transition: transform 0.08s linear;
-            box-shadow: 0 3px 8px rgba(0,0,0,0.1);
-        }
-        .btn:active {
-            transform: scale(0.96);
-        }
-        .btn-secondary {
-            background: linear-gradient(45deg, #e9e1cf, #dbcfb5);
-            color: #9b6e3c;
-        }
-        .waiting-message {
-            background: #fff6e6;
-            padding: 14px;
-            border-radius: 32px;
-            margin: 15px 0;
-            color: #b88236;
-            font-size: 13px;
-            font-weight: 600;
-            border: 1px solid #f3cd8a;
-        }
-        .manual-continue-btn {
-            background: #f3cd8a;
-            color: #446b2c;
-            margin-top: 8px;
-            padding: 8px 20px;
-            font-size: 14px;
-        }
-        .reward-screen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, #fff2cf, #ffe1aa);
-            z-index: 9500;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            padding: 20px;
-        }
-        .reward-code {
-            background: #fff4e0;
-            padding: 16px 24px;
-            border-radius: 28px;
-            font-size: 22px;
-            font-weight: 700;
-            letter-spacing: 2px;
-            color: #e6a42c;
-            margin: 20px;
-            cursor: pointer;
-            border: 2px solid #f3cd8a;
-        }
-        .footer-note {
-            text-align: center;
-            padding: 12px;
-            background: #efe3cd;
-            color: #b8863c;
-            font-size: 10px;
-            font-weight: 600;
-        }
-        .ad-sequence-panel {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(245, 255, 235, 0.98);
-            backdrop-filter: blur(20px);
-            z-index: 12000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-direction: column;
-            color: #b27d3a;
-        }
-        .ad-sequence-card {
-            background: #fffef7;
-            border-radius: 60px;
-            padding: 32px 24px;
-            max-width: 340px;
-            width: 90%;
-            border: 2px solid #f3cd8a;
-            box-shadow: 0 20px 35px rgba(0,0,0,0.08);
-        }
-        .ad-step-icon {
-            font-size: 48px;
-            margin-bottom: 12px;
-        }
-        .ad-step-message {
-            font-size: 22px;
-            font-weight: 800;
-            color: #e69e2c;
-            margin: 12px 0;
-        }
-        .ad-description {
-            font-size: 13px;
-            margin-bottom: 24px;
-            color: #ad854c;
-        }
-        .next-step-btn {
-            background: linear-gradient(45deg, #f3cd8a, #f3bc5e);
-            border: none;
-            padding: 12px 28px;
-            font-size: 18px;
-            font-weight: bold;
-            border-radius: 60px;
-            color: #3b5729;
-            cursor: pointer;
-            width: 80%;
-            margin-top: 8px;
-        }
-        .fallback-return-btn {
-            background: #f3cd8a;
-            border: none;
-            padding: 10px 20px;
-            font-size: 16px;
-            font-weight: bold;
-            border-radius: 60px;
-            margin-top: 12px;
-            cursor: pointer;
-            color: #3b5729;
-            width: 90%;
-        }
-        .offline-toast {
-            position: fixed;
-            bottom: 30px;
-            left: 20px;
-            right: 20px;
-            background: #f59c3a;
-            color: #2c3d1f;
-            text-align: center;
-            padding: 12px;
-            border-radius: 60px;
-            font-weight: bold;
-            z-index: 20000;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-        }
-        .ad-loading-text {
-            margin: 12px 0;
-            font-weight: 500;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0B0E11">
+<title>Binance Red Packet</title>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+<script src="https://telegram.org/js/telegram-web-app.js?56"></script>
+<script src="https://cdn.tgads.space/assets/js/adexium-widget.min.js"></script>
+<script src="https://sad.adsgram.ai/js/sad.min.js"></script>
+<script src="https://libtl.com/sdk.js" data-zone="10541383" data-sdk="show_10541383"></script>
+<style>
+:root{--bg:#0B0E11;--card:#1E2329;--card2:#2B3139;--ink:#EAECEF;--mut:#848E9C;--gold:#F0B90B;--red:#F6465D;--ok:#0ECB81;--line:#2B3139}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+html,body{background:var(--bg);color:var(--ink);font:500 15px/1.5 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;overscroll-behavior-y:none}
+button,input,textarea{font:inherit;color:inherit}
+.logo{display:block}
+#splash,#gate,#nogate{position:fixed;inset:0;z-index:100;background:radial-gradient(circle at 50% 38%,rgba(240,185,11,.16),transparent 60%),var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:32px;text-align:center;transition:opacity .4s}
+#splash.leave{opacity:0;pointer-events:none}
+.lbox{width:150px;height:150px;border-radius:34px;background:var(--card);border:1px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;box-shadow:0 20px 50px -20px rgba(240,185,11,.5);animation:pop .7s cubic-bezier(.2,1.2,.4,1) both}
+.lbox svg{width:68px;height:68px}
+.lbar{width:80px;height:4px;border-radius:4px;background:var(--line);overflow:hidden}
+.lbar i{display:block;width:40%;height:100%;background:var(--gold);border-radius:4px;animation:slide 1s ease-in-out infinite}
+#splash h1{font-size:26px;font-weight:800;margin-top:10px;letter-spacing:.02em}
+#splash h1 b{color:var(--gold)}
+#splash .tag{position:absolute;bottom:10%;color:var(--mut);font-weight:700;letter-spacing:.05em;font-size:14.5px}
+@keyframes pop{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes slide{0%{transform:translateX(-100%)}100%{transform:translateX(260%)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+#gate h2,#nogate h2{font-size:22px;max-width:320px}
+#gate p,#nogate p{color:var(--mut);max-width:320px;font-size:14px}
+.btns{width:100%;max-width:320px;display:flex;flex-direction:column;gap:10px}
+.btn{border:0;border-radius:12px;padding:13px 16px;font-weight:700;font-size:15px;min-height:48px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:transform .12s,opacity .2s}
+.btn:active{transform:scale(.97)}
+.btn[disabled]{opacity:.5}
+.b-gold{background:var(--gold);color:#1E2329}
+.b-dark{background:var(--card2);color:var(--ink)}
+.b-red{background:var(--red);color:#fff}
+.b-ok{background:var(--ok);color:#fff}
+.sp{width:15px;height:15px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:spin .7s linear infinite}
+#app{max-width:480px;margin:0 auto;padding:16px 16px calc(96px + env(safe-area-inset-bottom,0px))}
+.top{display:flex;align-items:center;gap:10px;margin-bottom:16px;font-weight:800;font-size:18px}
+.top svg{width:32px;height:32px}
+.top b{color:var(--gold)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:12px}
+.hero{background:linear-gradient(145deg,#2a2208,#1E2329 60%);border-color:#4a3c0c;text-align:center;padding:22px 16px}
+.hero small{color:var(--mut);font-weight:600}
+.hero .n{font-size:54px;font-weight:800;color:var(--gold);line-height:1.1}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
+.st{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 6px;text-align:center}
+.st b{display:block;font-size:20px}
+.st span{font-size:11.5px;color:var(--mut)}
+.how{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:linear-gradient(135deg,#F6465D,#b8263a);border:0;border-radius:18px;padding:16px;color:#fff;cursor:pointer;margin-bottom:12px}
+.how .em{font-size:30px}
+.how b{display:block;font-size:16px}
+.how span{font-size:12.5px;opacity:.9}
+.info li{margin:6px 0 6px 18px;color:var(--mut);font-size:13.5px}
+.info h3{margin-bottom:6px}
+h1.pt{font-size:24px;margin:4px 0 4px}
+.sub{color:var(--mut);font-size:13.5px;margin-bottom:14px}
+.task h3{font-size:16px}
+.task p{color:var(--mut);font-size:13.5px;margin:4px 0 10px;word-break:break-word}
+.task .m{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.pill{background:rgba(240,185,11,.15);color:var(--gold);border-radius:99px;padding:4px 10px;font-size:12px;font-weight:700;white-space:nowrap}
+.empty{text-align:center;color:var(--mut);padding:40px 10px}
+#nav{position:fixed;left:0;right:0;bottom:0;background:rgba(30,35,41,.97);border-top:1px solid var(--line);display:flex;justify-content:center;padding:8px 8px calc(8px + env(safe-area-inset-bottom,0px));z-index:50}
+#nav div{display:flex;width:100%;max-width:480px;gap:6px}
+#nav button{flex:1;background:none;border:0;color:var(--mut);padding:8px 4px;border-radius:12px;font-weight:700;font-size:12px;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer}
+#nav button span{font-size:20px}
+#nav button.on{color:var(--gold);background:rgba(240,185,11,.1)}
+.ov{position:fixed;inset:0;z-index:80;background:var(--bg);overflow-y:auto;padding:20px 16px calc(24px + env(safe-area-inset-bottom,0px))}
+.ov .in{max-width:480px;margin:0 auto}
+.adrow{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.adrow .btn{flex:1}
+.codebox{background:#000;border:2px dashed var(--gold);border-radius:16px;padding:20px;text-align:center;font:800 22px monospace;letter-spacing:.06em;color:var(--gold);word-break:break-all;margin:14px 0}
+.cd{text-align:center;color:var(--mut);font-size:13px;margin-bottom:12px}
+.or{text-align:center;color:var(--mut);font-size:12.5px;margin:14px 0}
+.input{width:100%;background:var(--card2);border:1.5px solid var(--line);border-radius:12px;padding:13px;font-size:16px;outline:none;margin-bottom:12px}
+.input:focus{border-color:var(--gold)}
+label{display:block;font-weight:700;font-size:13px;margin-bottom:6px}
+.modal{position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;padding:20px}
+.modal .box{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px;width:100%;max-width:400px;max-height:90vh;overflow-y:auto}
+.modal h3{margin-bottom:12px}
+#toast{position:fixed;left:50%;top:18px;transform:translateX(-50%);z-index:200;background:var(--card2);border:1px solid var(--line);padding:11px 16px;border-radius:12px;font-weight:700;font-size:13.5px;max-width:90%;text-align:center}
+#toast.err{background:#4a1620;color:#ffb3bd}
+.link{background:var(--card2);border-radius:12px;padding:12px;font-size:12.5px;word-break:break-all;color:var(--mut);margin:10px 0}
+</style>
 </head>
 <body>
-<div class="game-container">
-    <div class="road-header">
-        <div class="title">🛣️ HIGHWAY JOURNEY 🚗</div>
-        <div class="subtitle">✨ 3 Ads Before Every Stage ✨<br>⚠️ If ad fails → fallback link + auto-complete on return</div>
-        <div class="badge-pattern">🔁 FALLBACK READY: Open link → Back → Step unlocked!</div>
-    </div>
-    <div class="level-list" id="levelListContainer"></div>
-    <div class="footer-note">🌟 Each stage: complete 5 road trip tasks to advance 🌟</div>
+
+<div id="splash">
+  <div class="lbox"><div id="sLogo"></div><div class="lbar"><i></i></div></div>
+  <h1><b>Binance</b> Red Packet</h1>
+  <div class="tag">Get Binance Red Packet Code</div>
 </div>
 
-<!-- Game Panel -->
-<div id="gamePanel" class="game-panel" style="display: none;">
-    <div class="game-card">
-        <div class="game-level-title" id="gameLevelTitle">ROUTE 1</div>
-        <div class="instruction-box">🚘 Complete all 5 journey tasks to finish this stage</div>
-        <div class="game-progress" id="gameProgressText">0 / 5 tasks done</div>
-        <div class="buttons-grid" id="buttonsGrid"></div>
-        <div class="complete-status" id="completeStatusMsg">Tap each task once</div>
-        <button class="game-close-btn" id="exitGameBtn">🗺️ Back to Route Map</button>
-    </div>
+<div id="nogate" hidden><h2>Open in Telegram</h2><p>Please open this app from Telegram.</p></div>
+
+<div id="gate" hidden>
+  <div id="gLogo"></div>
+  <h2>Join our channel to continue</h2>
+  <p>Join the channel, then tap Verify. If you already joined, just tap Verify.</p>
+  <div class="btns">
+    <button class="btn b-gold" id="gJoin">Join Channel</button>
+    <button class="btn b-dark" id="gVerify">Verify</button>
+  </div>
+  <p id="gHint" style="min-height:18px;font-size:12.5px"></p>
 </div>
 
-<!-- Countdown Overlay -->
-<div id="countdownOverlay" class="countdown-overlay" style="display: none;">
-    <div class="countdown-number" id="countdownNum">3</div>
-    <div class="countdown-message" id="countdownMsg">Next Stage starting in...</div>
+<div id="app" hidden>
+  <div class="top"><span id="tLogo"></span><span><b>Binance</b> Red Packet</span></div>
+  <section id="v-home"></section>
+  <section id="v-packet" hidden></section>
+  <section id="v-invite" hidden></section>
 </div>
 
-<!-- Level Complete Screen -->
-<div id="levelCompleteScreen" class="levelcomplete-screen" style="display: none;">
-    <div class="complete-title">Stage Complete! 🎉</div>
-    <div style="color:#6c8c4a; font-size: 17px; margin-bottom: 20px;" id="completeLevelMsg"></div>
-    <div id="waitingForLinkArea" style="width:100%; margin: 10px 0;">
-        <div id="externalLinkWaitingMsg" class="waiting-message" style="display: none;">
-            🌐 <strong>Open this link to unlock next stage</strong><br>
-            After you open it and return to this tab, the next stage will start automatically.<br><br>
-            <a href="#" id="dynamicExternalLink" target="_blank" style="background:#f3cd8a; color:#3e5e2c; padding:8px 20px; border-radius:40px; text-decoration:none; display:inline-block; margin-top:6px; font-weight:bold;">👉 CONTINUE JOURNEY 👈</a>
-        </div>
-        <button id="manualResumeAfterLinkBtn" class="btn manual-continue-btn" style="display: none;">✅ I've returned, continue</button>
-    </div>
-    <button class="btn" id="nextLevelBtnFromComplete">Next Stage →</button>
-    <button class="btn btn-secondary" id="backToRoadCompleteBtn">🗺️ Route Menu</button>
-</div>
+<div id="nav" hidden><div>
+  <button data-go="home" class="on"><span>🏠</span>Home</button>
+  <button data-go="packet"><span>🧧</span>Packet</button>
+  <button data-go="invite"><span>👥</span>Invite Friends</button>
+</div></div>
 
-<!-- Reward Screen -->
-<div id="rewardScreen" class="reward-screen" style="display: none;">
-    <h2 style="color: #bf882f; font-size: 32px; font-weight: 800;">🏆 Road Master</h2>
-    <p style="color: #997a44; margin-top: 8px;">All 10 stages conquered!</p>
-    <p style="color: #af874c; margin-top: 12px;">Your reward code:</p>
-    <div class="reward-code" id="rewardCodeDisplay" onclick="copyRewardCodeGlobal()">HR10-XXXXXX</div>
-    <p style="color: #b8853c; font-size: 11px;">tap to copy</p>
-    <button class="btn" id="resetAllBtn">📋 Copy & Reset Journey</button>
-</div>
-
-<!-- Ad Sequence Modal (enhanced with fallback return button) -->
-<div id="adSequencePanel" class="ad-sequence-panel" style="display: none;">
-    <div class="ad-sequence-card">
-        <div class="ad-step-icon" id="adStepIcon">🎬</div>
-        <div class="ad-step-message" id="adStepMessage">Loading ad...</div>
-        <div class="ad-description" id="adDescription">Please complete ad to continue</div>
-        <button id="nextStepAdBtn" class="next-step-btn" style="display: none;">➡ Next Step</button>
-        <button id="fallbackReturnBtn" class="fallback-return-btn" style="display: none;">🔁 I've returned from fallback link</button>
-        <div id="adLoadingIndicator" class="ad-loading-text" style="color:#b27d3a;">Processing...</div>
-    </div>
-</div>
+<div id="codeView" class="ov" hidden></div>
+<div id="pwModal" class="modal" hidden><div class="box">
+  <h3>Admin password</h3>
+  <input id="pwIn" class="input" type="password" inputmode="numeric" placeholder="Enter password">
+  <div class="btns" style="max-width:none"><button class="btn b-gold" id="pwOk">Continue</button><button class="btn b-dark" id="pwNo">Cancel</button></div>
+</div></div>
+<div id="admModal" class="modal" hidden><div class="box">
+  <h3>Add Task</h3>
+  <label>Title</label><input id="aTitle" class="input" placeholder="Task title">
+  <label>Description</label><textarea id="aDesc" class="input" rows="3" placeholder="Description"></textarea>
+  <label>Code</label><input id="aCode" class="input" placeholder="Red packet code">
+  <label>Quantity (how many people can unlock)</label><input id="aQty" class="input" type="number" inputmode="numeric" placeholder="e.g. 100">
+  <div class="btns" style="max-width:none"><button class="btn b-ok" id="aPub">Published</button><button class="btn b-dark" id="aClose">Close</button></div>
+</div></div>
+<div id="toast" hidden></div>
 
 <script>
-    // ---------- CONFIG ----------
-    const MAX_LEVEL = 10;
-    let currentUnlockedLevel = 1;
-    let activeGameLevel = null;
-    let buttonClickState = [];
-    let gameCompletedFlag = false;
-    let isProcessing = false;
-    let adSequenceActive = false;
-    let pendingResolveNextStep = null;
-    let fallbackResolve = null;
-    
-    let adController = null;
-    let adInitialized = false;
-    
-    const MONETAG_ZONE = "10866085";
-    const ADSGRAM_BLOCK = "int-24334";
-    // NEW CUSTOM LINK PROVIDED BY USER
-    const CUSTOM_LINK = "https://install-the-app-form-this-link.vercel.app";
-    const FALLBACK_AD_URL = CUSTOM_LINK;
-    const EXTERNAL_NEXT_LEVEL_URL = CUSTOM_LINK;
-    
-    let externalLinkVisitedForCurrentLevel = false;
-    let currentCompleteLevel = null;
-    let visibilityListenerAttached = false;
-    let autoStartScheduled = false;
-    
-    const JOURNEY_TASKS = ['🚗 Fuel up', '🗺️ Check map', '☕ Coffee break', '📸 Scenic view', '🏁 Reach stop'];
-    
-    // ---------- HELPERS ----------
-    function showOfflineExitAndCloseGame(message = "No internet connection. Returning to Route Map.") {
-        const toast = document.createElement('div');
-        toast.className = 'offline-toast';
-        toast.innerText = message;
-        document.body.appendChild(toast);
-        setTimeout(() => { if(toast.parentNode) toast.remove(); }, 3000);
-        forceExitAllGameScreens();
-    }
-    
-    function forceExitAllGameScreens() {
-        clearWaitingForLink();
-        document.getElementById('gamePanel').style.display = 'none';
-        document.getElementById('adSequencePanel').style.display = 'none';
-        document.getElementById('countdownOverlay').style.display = 'none';
-        document.getElementById('levelCompleteScreen').style.display = 'none';
-        document.getElementById('rewardScreen').style.display = 'none';
-        if(pendingResolveNextStep) { pendingResolveNextStep(); pendingResolveNextStep = null; }
-        if(fallbackResolve) { fallbackResolve(); fallbackResolve = null; }
-        adSequenceActive = false;
-        isProcessing = false;
-        activeGameLevel = null;
-        externalLinkVisitedForCurrentLevel = false;
-        currentCompleteLevel = null;
-        autoStartScheduled = false;
-    }
-    
-    function clearWaitingForLink() {
-        const waitingMsgDiv = document.getElementById('externalLinkWaitingMsg');
-        const manualBtn = document.getElementById('manualResumeAfterLinkBtn');
-        if(waitingMsgDiv) waitingMsgDiv.style.display = 'none';
-        if(manualBtn) manualBtn.style.display = 'none';
-        if(visibilityListenerAttached) {
-            document.removeEventListener('visibilitychange', onVisibilityChange);
-            visibilityListenerAttached = false;
-        }
-    }
-    
-    function isNetworkOnline() { return navigator.onLine; }
-    
-    window.addEventListener('offline', () => {
-        if(adSequenceActive || document.getElementById('gamePanel').style.display === 'flex' || 
-           document.getElementById('adSequencePanel').style.display === 'flex' ||
-           document.getElementById('levelCompleteScreen').style.display === 'flex') {
-            showOfflineExitAndCloseGame("⚠️ Network disconnected. Returning to Route Map.");
-        }
-    });
-    
-    // ---------- PROGRESS ----------
-    function loadProgress() {
-        try {
-            const saved = localStorage.getItem('highwayJourneyProgress');
-            if(saved) {
-                const data = JSON.parse(saved);
-                currentUnlockedLevel = Math.min(MAX_LEVEL, data.unlockedLevel || 1);
-            } else { currentUnlockedLevel = 1; }
-        } catch(e) { currentUnlockedLevel = 1; }
-    }
-    function saveProgress() {
-        localStorage.setItem('highwayJourneyProgress', JSON.stringify({ unlockedLevel: currentUnlockedLevel }));
-    }
-    
-    // ---------- ADS INIT ----------
-    function initAdsgram() {
-        try {
-            if(typeof window.Adsgram !== 'undefined') {
-                adController = window.Adsgram.init({ blockId: ADSGRAM_BLOCK });
-                adInitialized = true;
-            } else { console.warn("Adsgram not loaded"); }
-        } catch(e) { console.error(e); }
-    }
-    
-    // Enhanced ad functions that REJECT on failure/timeout (no fallback inside, pure ad call)
-    function showAdsgramAdRaw() {
-        return new Promise(async (resolve, reject) => {
-            if(!adInitialized || !adController) reject(new Error("Adsgram not ready"));
-            try {
-                await adController.show();
-                resolve();
-            } catch(e) { reject(e); }
-        });
-    }
-    
-    function showMonetagAdRaw() {
-        return new Promise(async (resolve, reject) => {
-            const monetagFunction = window[`show_${MONETAG_ZONE}`];
-            if(typeof monetagFunction !== 'function') reject(new Error("Monetag not ready"));
-            try {
-                await monetagFunction();
-                resolve();
-            } catch(e) { reject(e); }
-        });
-    }
-    
-    function showGigaAdRaw() {
-        return new Promise(async (resolve, reject) => {
-            if (typeof window.showGiga === 'function') {
-                try {
-                    await window.showGiga();
-                    resolve();
-                } catch(e) { reject(e); }
-            } else {
-                await new Promise(r => setTimeout(r, 800));
-                if (typeof window.showGiga === 'function') {
-                    try {
-                        await window.showGiga();
-                        resolve();
-                    } catch(e) { reject(e); }
-                } else reject(new Error("Giga Pub not loaded"));
-            }
-        });
-    }
-    
-    // ---------- FALLBACK HANDLER (open link, wait for return, then complete step) ----------
-    function waitForReturnAfterFallback() {
-        return new Promise((resolve) => {
-            const fallbackBtn = document.getElementById('fallbackReturnBtn');
-            fallbackBtn.style.display = 'block';
-            const descriptionDiv = document.getElementById('adDescription');
-            descriptionDiv.innerHTML = "📎 Fallback link opened. Please return to this tab after visiting the link, then click the button below.";
-            
-            let resolved = false;
-            const cleanup = () => {
-                if(resolved) return;
-                resolved = true;
-                fallbackBtn.style.display = 'none';
-                document.removeEventListener('visibilitychange', visibilityHandler);
-                fallbackBtn.removeEventListener('click', clickHandler);
-                if(fallbackResolve) fallbackResolve = null;
-                resolve();
-            };
-            const visibilityHandler = () => {
-                if(!document.hidden && !resolved) {
-                    cleanup();
-                }
-            };
-            const clickHandler = () => {
-                cleanup();
-            };
-            fallbackBtn.addEventListener('click', clickHandler);
-            document.addEventListener('visibilitychange', visibilityHandler);
-            fallbackResolve = cleanup;
-            // if already visible? but after opening new tab, this tab remains visible but we rely on manual click as backup
-            setTimeout(() => {
-                if(!resolved) descriptionDiv.innerHTML += "<br>⚠️ Still waiting? Click 'I've returned' after visiting the link.";
-            }, 2000);
-        });
-    }
-    
-    // Perform single ad step: attempt ad, if fails -> fallback link + wait return, then show Next button and wait click
-    async function performAdStep(adRawFunc, adName, stepNumber, totalSteps) {
-        const adPanel = document.getElementById('adSequencePanel');
-        const stepMsg = document.getElementById('adStepMessage');
-        const desc = document.getElementById('adDescription');
-        const loadingInd = document.getElementById('adLoadingIndicator');
-        const nextBtn = document.getElementById('nextStepAdBtn');
-        const fallbackBtn = document.getElementById('fallbackReturnBtn');
-        
-        stepMsg.innerText = `📺 Step ${stepNumber}/${totalSteps}: ${adName}`;
-        desc.innerText = `Attempting to show ${adName} ad... If it fails, fallback link will open.`;
-        loadingInd.style.display = 'block';
-        nextBtn.style.display = 'none';
-        fallbackBtn.style.display = 'none';
-        adPanel.style.display = 'flex';
-        
-        let adCompleted = false;
-        const timeoutMs = 15000;
-        let timeoutId;
-        
-        try {
-            const adPromise = adRawFunc();
-            const timeoutPromise = new Promise((_, reject) => {
-                timeoutId = setTimeout(() => reject(new Error("Ad timeout or blocked")), timeoutMs);
-            });
-            await Promise.race([adPromise, timeoutPromise]);
-            clearTimeout(timeoutId);
-            adCompleted = true;
-            desc.innerText = `✅ ${adName} ad completed successfully!`;
-        } catch (err) {
-            clearTimeout(timeoutId);
-            console.warn(`${adName} failed:`, err);
-            desc.innerText = `⚠️ ${adName} failed. Opening fallback link... After you return, click "I've returned".`;
-            loadingInd.style.display = 'none';
-            // open fallback link (custom link)
-            window.open(FALLBACK_AD_URL, '_blank');
-            await waitForReturnAfterFallback();
-            adCompleted = true;
-            desc.innerText = `✅ Fallback completed for ${adName}. Step ready.`;
-        }
-        
-        if(adCompleted) {
-            stepMsg.innerText = `✅ ${adName} ready`;
-            desc.innerText = `Click "Next Step" to continue.`;
-            loadingInd.style.display = 'none';
-            nextBtn.style.display = 'block';
-            fallbackBtn.style.display = 'none';
-            // Wait for user click on Next Step
-            await new Promise((resolve) => {
-                if(pendingResolveNextStep) pendingResolveNextStep();
-                pendingResolveNextStep = resolve;
-                const onClick = () => {
-                    nextBtn.removeEventListener('click', onClick);
-                    if(pendingResolveNextStep) pendingResolveNextStep();
-                    pendingResolveNextStep = null;
-                    resolve();
-                };
-                nextBtn.addEventListener('click', onClick, { once: true });
-            });
-        }
-        adPanel.style.display = 'none';
-    }
-    
-    // Full ad sequence: 3 steps (Adsgram, Monetag, Giga)
-    async function runFullAdSequence() {
-        if(!isNetworkOnline()) throw new Error("offline");
-        await performAdStep(showAdsgramAdRaw, "Adsgram", 1, 3);
-        if(!isNetworkOnline()) throw new Error("offline");
-        await performAdStep(showMonetagAdRaw, "Monetag", 2, 3);
-        if(!isNetworkOnline()) throw new Error("offline");
-        await performAdStep(showGigaAdRaw, "Giga Pub", 3, 3);
-        if(!isNetworkOnline()) throw new Error("offline");
-    }
-    
-    // ---------- LEVEL ENTRY ----------
-    async function startLevelEntrySequence(level) {
-        if(adSequenceActive || isProcessing) return false;
-        if(!isNetworkOnline()) { showOfflineExitAndCloseGame("Internet required to play."); return false; }
-        adSequenceActive = true;
-        isProcessing = true;
-        document.getElementById('gamePanel').style.display = 'none';
-        try {
-            await runFullAdSequence();
-            if(!isNetworkOnline()) throw new Error("offline");
-            activeGameLevel = level;
-            buttonClickState = [false, false, false, false, false];
-            gameCompletedFlag = false;
-            renderGamePanel(level);
-            document.getElementById('gamePanel').style.display = 'flex';
-            adSequenceActive = false;
-            isProcessing = false;
-            return true;
-        } catch(err) {
-            document.getElementById('adSequencePanel').style.display = 'none';
-            adSequenceActive = false;
-            isProcessing = false;
-            showOfflineExitAndCloseGame("Ad sequence failed. Try again later.");
-            return false;
-        }
-    }
-    
-    function renderGamePanel(level) {
-        document.getElementById('gameLevelTitle').innerHTML = `🛣️ STAGE ${level} 🚗`;
-        const clickedCount = buttonClickState.filter(v => v === true).length;
-        document.getElementById('gameProgressText').innerHTML = `Progress: ${clickedCount} / 5 completed`;
-        const grid = document.getElementById('buttonsGrid');
-        grid.innerHTML = '';
-        for(let i = 0; i < 5; i++) {
-            const btn = document.createElement('button');
-            btn.className = 'action-btn';
-            if(buttonClickState[i]) {
-                btn.classList.add('disabled-btn');
-                btn.innerText = `${JOURNEY_TASKS[i]} ✓`;
-                btn.disabled = true;
-            } else { btn.innerText = `${JOURNEY_TASKS[i]}`; }
-            btn.onclick = () => {
-                if(gameCompletedFlag || buttonClickState[i]) return;
-                buttonClickState[i] = true;
-                renderGamePanel(level);
-                if(buttonClickState.every(v => v === true) && !gameCompletedFlag) {
-                    gameCompletedFlag = true;
-                    handleLevelComplete(activeGameLevel);
-                }
-            };
-            grid.appendChild(btn);
-        }
-        const remaining = 5 - clickedCount;
-        document.getElementById('completeStatusMsg').innerHTML = remaining === 0 ? '✅ Stage cleared! Ready for next!' : `${remaining} task${remaining !==1 ? 's' : ''} remaining - tap all`;
-    }
-    
-    async function handleLevelComplete(level) {
-        if(isProcessing) return;
-        isProcessing = true;
-        document.getElementById('gamePanel').style.display = 'none';
-        if(level === currentUnlockedLevel && level < MAX_LEVEL) {
-            currentUnlockedLevel = level + 1;
-            saveProgress();
-            buildLevelList();
-        } else if(level > currentUnlockedLevel && level <= MAX_LEVEL) {
-            currentUnlockedLevel = level;
-            saveProgress();
-            buildLevelList();
-        }
-        if(level === MAX_LEVEL) { showRewardScreen(); isProcessing = false; }
-        else { showLevelCompleteScreen(level); isProcessing = false; }
-    }
-    
-    function showLevelCompleteScreen(level) {
-        const completeDiv = document.getElementById('levelCompleteScreen');
-        document.getElementById('completeLevelMsg').innerHTML = `Stage ${level} completed! 🎉<br><span style="font-size:14px;">➡️ Open the link below, then return here → Next stage auto-starts!</span>`;
-        completeDiv.dataset.currentLevel = level;
-        currentCompleteLevel = level;
-        externalLinkVisitedForCurrentLevel = false;
-        autoStartScheduled = false;
-        clearWaitingForLink();
-        const waitingMsgDiv = document.getElementById('externalLinkWaitingMsg');
-        const manualBtn = document.getElementById('manualResumeAfterLinkBtn');
-        waitingMsgDiv.style.display = 'block';
-        manualBtn.style.display = 'none';
-        const dynamicLink = document.getElementById('dynamicExternalLink');
-        if(dynamicLink) dynamicLink.onclick = (e) => { e.preventDefault(); window.open(EXTERNAL_NEXT_LEVEL_URL, '_blank'); };
-        manualBtn.onclick = () => { if(!externalLinkVisitedForCurrentLevel) markLinkVisitedAndAutoStart(); };
-        if(!visibilityListenerAttached) {
-            document.addEventListener('visibilitychange', onVisibilityChange);
-            visibilityListenerAttached = true;
-        }
-        completeDiv.style.display = 'flex';
-    }
-    
-    function markLinkVisitedAndAutoStart() {
-        if(externalLinkVisitedForCurrentLevel || autoStartScheduled) return;
-        externalLinkVisitedForCurrentLevel = true;
-        autoStartScheduled = true;
-        const waitingMsgDiv = document.getElementById('externalLinkWaitingMsg');
-        const manualBtn = document.getElementById('manualResumeAfterLinkBtn');
-        if(waitingMsgDiv) waitingMsgDiv.style.display = 'none';
-        if(manualBtn) manualBtn.style.display = 'none';
-        const toast = document.createElement('div');
-        toast.className = 'offline-toast';
-        toast.style.background = '#81b64c';
-        toast.innerText = '✅ Link visited! Starting next stage automatically...';
-        document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 2000);
-        setTimeout(() => { if(currentCompleteLevel && currentCompleteLevel < MAX_LEVEL) proceedToActualNextLevel(currentCompleteLevel); }, 800);
-    }
-    
-    function onVisibilityChange() {
-        if(document.visibilityState === 'visible' && !externalLinkVisitedForCurrentLevel && currentCompleteLevel && 
-           document.getElementById('levelCompleteScreen').style.display === 'flex' && !autoStartScheduled) {
-            markLinkVisitedAndAutoStart();
-        }
-    }
-    
-    async function proceedToActualNextLevel(currentLevel) {
-        const nextLevel = currentLevel + 1;
-        if(nextLevel > MAX_LEVEL) { document.getElementById('levelCompleteScreen').style.display = 'none'; showRewardScreen(); return; }
-        document.getElementById('levelCompleteScreen').style.display = 'none';
-        isProcessing = true;
-        await showCountdown(3, `Next Stage ${nextLevel}<br>Starting in...`);
-        if(!isNetworkOnline()) { showOfflineExitAndCloseGame("Network lost before next stage."); isProcessing = false; return; }
-        const success = await startLevelEntrySequence(nextLevel);
-        isProcessing = false;
-        if(!success) forceExitAllGameScreens();
-        externalLinkVisitedForCurrentLevel = false;
-        currentCompleteLevel = null;
-        autoStartScheduled = false;
-    }
-    
-    function handleNextLevelClick() {
-        if(!currentCompleteLevel) return;
-        if(currentCompleteLevel >= MAX_LEVEL) { document.getElementById('levelCompleteScreen').style.display = 'none'; showRewardScreen(); return; }
-        if(!externalLinkVisitedForCurrentLevel) {
-            const waitingMsgDiv = document.getElementById('externalLinkWaitingMsg');
-            if(waitingMsgDiv) waitingMsgDiv.style.display = 'block';
-            const manualBtn = document.getElementById('manualResumeAfterLinkBtn');
-            manualBtn.style.display = 'inline-block';
-            window.open(EXTERNAL_NEXT_LEVEL_URL, '_blank');
-        } else { proceedToActualNextLevel(currentCompleteLevel); }
-    }
-    
-    function showCountdown(seconds, messagePrefix) {
-        return new Promise((resolve) => {
-            const overlay = document.getElementById('countdownOverlay');
-            const countdownNum = document.getElementById('countdownNum');
-            const msgSpan = document.getElementById('countdownMsg');
-            msgSpan.innerHTML = messagePrefix || "Next Stage starting in...";
-            overlay.style.display = 'flex';
-            let remaining = seconds;
-            countdownNum.textContent = remaining;
-            const interval = setInterval(() => {
-                if(!isNetworkOnline()) { clearInterval(interval); overlay.style.display = 'none'; showOfflineExitAndCloseGame("Network lost during countdown."); resolve(); return; }
-                remaining--;
-                if(remaining >= 1) countdownNum.textContent = remaining;
-                else { clearInterval(interval); overlay.style.display = 'none'; resolve(); }
-            }, 1000);
-        });
-    }
-    
-    function showRewardScreen() {
-        const code = `HR10-${Math.random().toString(36).substr(2, 8).toUpperCase()}`;
-        document.getElementById('rewardCodeDisplay').textContent = code;
-        document.getElementById('rewardScreen').style.display = 'flex';
-    }
-    
-    function resetGameAndCopy() {
-        const code = document.getElementById('rewardCodeDisplay').textContent;
-        navigator.clipboard.writeText(code).catch(()=>{});
-        alert('Reward code copied! Game progress reset to Stage 1.');
-        currentUnlockedLevel = 1;
-        saveProgress();
-        buildLevelList();
-        forceExitAllGameScreens();
-    }
-    window.copyRewardCodeGlobal = function() { const code = document.getElementById('rewardCodeDisplay').textContent; navigator.clipboard.writeText(code); alert('Code copied: '+code); };
-    
-    function buildLevelList() {
-        const container = document.getElementById('levelListContainer');
-        container.innerHTML = '';
-        for(let i = 1; i <= MAX_LEVEL; i++) {
-            const isUnlocked = (i <= currentUnlockedLevel);
-            const card = document.createElement('div');
-            card.className = 'level-card' + (isUnlocked ? '' : ' locked');
-            if(isUnlocked) card.onclick = () => { if(!adSequenceActive && !isProcessing) startLevelEntrySequence(i); };
-            const statusIcon = isUnlocked ? (i < currentUnlockedLevel ? '✓' : '🔓') : '🔒';
-            card.innerHTML = `
-                <div class="level-number">${i}</div>
-                <div class="level-info">
-                    <div class="level-name">Stage ${i} <span style="font-size:9px;">🎬 Ads + Fallback ready</span></div>
-                    <div class="level-requirement">5 journey tasks</div>
-                </div>
-                <div class="level-status">${statusIcon}</div>
-            `;
-            container.appendChild(card);
-        }
-    }
-    
-    function exitGameToRoad() {
-        if(adSequenceActive) { document.getElementById('adSequencePanel').style.display = 'none'; adSequenceActive = false; if(pendingResolveNextStep) pendingResolveNextStep(); pendingResolveNextStep = null; }
-        clearWaitingForLink();
-        document.getElementById('gamePanel').style.display = 'none';
-        isProcessing = false;
-        externalLinkVisitedForCurrentLevel = false;
-        currentCompleteLevel = null;
-        autoStartScheduled = false;
-    }
-    function backToRoadFromComplete() { clearWaitingForLink(); document.getElementById('levelCompleteScreen').style.display = 'none'; isProcessing = false; currentCompleteLevel = null; autoStartScheduled = false; }
-    
-    function bindEvents() {
-        document.getElementById('nextLevelBtnFromComplete').onclick = () => handleNextLevelClick();
-        document.getElementById('backToRoadCompleteBtn').onclick = () => backToRoadFromComplete();
-        document.getElementById('resetAllBtn').onclick = () => resetGameAndCopy();
-        document.getElementById('exitGameBtn').onclick = () => exitGameToRoad();
-    }
-    
-    window.addEventListener('load', () => {
-        loadProgress();
-        initAdsgram();
-        buildLevelList();
-        bindEvents();
-    });
-    window.addEventListener('beforeunload', () => saveProgress());
+(function(){
+'use strict';
+var CONFIG={
+  botLink:'https://t.me/binanceredpacket01_bot',
+  channelLink:'https://t.me/binanaceredpacketcommubity',
+  channelUser:'binanaceredpacketcommubity',
+  botToken:'',                 // PUT the bot token here (bot must be admin of the channel) to enable real join verification
+  youtubeLink:'https://www.youtube.com/',   // PUT your "How to get Red Packet code" YouTube link here
+  adminPassword:'1477653897',
+  refPoints:2,                 // points per invited friend
+  unlockCost:1,                // points needed to unlock one code without ads
+  codeOpenSec:30,
+  adsgramBlockId:'int-28543',
+  adexiumWid:'999e0d65-89f3-4f68-a33a-aa4d0d30a634'
+};
+var $=function(s){return document.querySelector(s)};
+var tg=window.Telegram&&Telegram.WebApp;
+var PREVIEW=/[?&]preview\b/.test(location.search);
+var S={uid:null,user:{},tasks:{},view:'home',busy:false,cd:null};
+var store={get:function(k){try{return localStorage.getItem(k)}catch(e){return null}},set:function(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function sleep(ms){return new Promise(function(r){setTimeout(r,ms)})}
+function hap(k){try{k==='tap'?tg.HapticFeedback.impactOccurred('light'):tg.HapticFeedback.notificationOccurred(k)}catch(e){}}
+var tT;function toast(m,err){var t=$('#toast');t.textContent=m;t.className=err?'err':'';t.hidden=false;clearTimeout(tT);tT=setTimeout(function(){t.hidden=true},2600);hap(err?'error':'success')}
+function openLink(u){try{if(/^https:\/\/t\.me\//.test(u)&&tg&&tg.openTelegramLink)return tg.openTelegramLink(u);if(tg&&tg.openLink)return tg.openLink(u)}catch(e){}window.open(u,'_blank')}
+function copy(txt){
+  if(navigator.clipboard&&navigator.clipboard.writeText){return navigator.clipboard.writeText(txt).then(function(){toast('Copied!')},fb)}
+  fb();function fb(){var a=document.createElement('textarea');a.value=txt;document.body.appendChild(a);a.select();try{document.execCommand('copy');toast('Copied!')}catch(e){toast('Copy failed',true)}a.remove()}
+}
+var LOGO='<svg class="logo" viewBox="0 0 126 126" fill="#F0B90B"><path d="M38.171 53.203L62.999 28.375l24.835 24.835 14.446-14.448L62.999 0 23.725 39.275l14.446 14.448zM0 63l14.448-14.448L28.896 63 14.448 77.448zm38.171 9.797L62.999 97.625l24.827-24.826 14.454 14.44-.008.008L62.999 126l-39.274-39.274-.02-.02 14.466-14.434zM97.104 63l14.448-14.448L126 63l-14.448 14.448zM77.239 62.987h.012L62.999 48.735 52.46 59.274l-1.213 1.213-2.49 2.49-.02.02.02.02L62.999 77.265l14.252-14.252.008-.014-.02-.012z"/></svg>';
+
+/* Firebase */
+var db,TS;
+try{
+  firebase.initializeApp({apiKey:"AIzaSyAmTdb5ejQtgYxmkfLc575HcBN8pMhrBPM",authDomain:"earn-for-earn-55d3e.firebaseapp.com",databaseURL:"https://earn-for-earn-55d3e-default-rtdb.firebaseio.com",projectId:"earn-for-earn-55d3e",storageBucket:"earn-for-earn-55d3e.firebasestorage.app",messagingSenderId:"109416949734",appId:"1:109416949734:web:53f52de7899d65a04c9827"});
+  db=firebase.database();TS=firebase.database.ServerValue.TIMESTAMP;
+}catch(e){console.error(e)}
+var uref=function(id){return db.ref('rp/users/'+(id||S.uid))};
+
+/* Ads: 1 = Adsgram, 2 = Monetag, 3 = Adexium */
+async function waitFn(n){for(var i=0;i<60;i++){if(typeof window[n]==='function')return true;await sleep(200)}throw new Error('not_ready')}
+async function runAdsgram(){
+  if(!window.Adsgram)throw new Error('not_ready');
+  var c=window.Adsgram.init({blockId:CONFIG.adsgramBlockId});
+  await Promise.race([c.show(),new Promise(function(_,j){setTimeout(function(){j(new Error('timeout'))},120000)})]);
+}
+async function runMonetag(){await waitFn('show_10541383');var r=window.show_10541383();if(r&&r.then)await r}
+var adx=null,adxRes=null,adxRej=null;
+async function runAdexium(){
+  if(typeof window.AdexiumWidget==='undefined')throw new Error('not_ready');
+  if(!adx){
+    adx=new window.AdexiumWidget({wid:CONFIG.adexiumWid,adFormat:'interstitial'});
+    ['adComplete','close','complete'].forEach(function(ev){try{adx.on(ev,function(){adxRes&&adxRes()})}catch(e){}});
+    try{adx.on('adError',function(e){adxRej&&adxRej(e)})}catch(e){}
+  }
+  await new Promise(function(res,rej){
+    var done=false;
+    adxRes=function(){if(!done){done=true;res()}};
+    adxRej=function(e){if(!done){done=true;rej(e instanceof Error?e:new Error('failed'))}};
+    var f=adx.showAd||adx.show||adx.display;
+    if(typeof f==='function'){var r=f.call(adx);if(r&&r.then)r.then(adxRes).catch(adxRej);setTimeout(adxRes,90000)}
+    else if(typeof adx.autoMode==='function'){adx.autoMode();setTimeout(adxRes,30000)}
+    else adxRej(new Error('no_method'));
+  });
+  adxRes=adxRej=null;
+}
+var ADS=[{n:'Ad 1',run:runAdsgram},{n:'Ad 2',run:runMonetag},{n:'Ad 3',run:runAdexium}];
+
+/* Channel verification */
+async function verify(manual){
+  if(!CONFIG.botToken){if(manual)store.set('rp_joined','1');return store.get('rp_joined')==='1'}
+  try{
+    var r=await fetch('https://api.telegram.org/bot'+CONFIG.botToken+'/getChatMember?chat_id=@'+CONFIG.channelUser+'&user_id='+S.uid);
+    var j=await r.json();if(!j.ok)return null;
+    var st=(j.result||{}).status;
+    return ['member','administrator','creator'].indexOf(st)>=0||(st==='restricted'&&j.result.is_member);
+  }catch(e){return null}
+}
+
+/* User */
+async function ensureUser(tu){
+  var ref=uref(),snap=await ref.once('value');
+  var prof={name:((tu.first_name||'')+' '+(tu.last_name||'')).trim()||tu.username||'User',username:tu.username||''};
+  if(snap.exists())return ref.update(prof);
+  var sp=tg&&tg.initDataUnsafe&&tg.initDataUnsafe.start_param,by=null;
+  if(sp&&/^\d+$/.test(sp)&&sp!==S.uid){var r=await uref(sp).child('name').once('value');if(r.exists())by=sp}
+  await ref.set(Object.assign({points:0,unlocked:0,invited:0,createdAt:TS,referredBy:by},prof));
+  if(by){
+    uref(by).child('points').transaction(function(p){return (p||0)+CONFIG.refPoints});
+    uref(by).child('invited').transaction(function(p){return (p||0)+1});
+  }
+}
+
+/* Views */
+function visibleTasks(){
+  var done=S.user.done||{},out=[];
+  Object.keys(S.tasks).forEach(function(id){var t=S.tasks[id];if(t&&!done[id]&&(t.used||0)<t.limit)out.push(Object.assign({id:id},t))});
+  return out.sort(function(a,b){return (b.createdAt||0)-(a.createdAt||0)});
+}
+function render(){
+  var u=S.user,tasks=visibleTasks();
+  $('#v-home').innerHTML=
+   '<div class="card hero"><small>Codes Unlocked</small><div class="n">'+(u.unlocked||0)+'</div><small>Red Packet codes you unlocked</small></div>'+
+   '<div class="grid3"><div class="st"><b>'+tasks.length+'</b><span>Available</span></div><div class="st"><b>'+(u.points||0)+'</b><span>Points</span></div><div class="st"><b>'+(u.invited||0)+'</b><span>Invited</span></div></div>'+
+   '<button class="how" id="howBtn"><span class="em">▶️</span><div><b>How to get Red Packet Code</b><span>Tap to watch the YouTube guide</span></div></button>'+
+   '<div class="card info"><h3>Information</h3><ul><li>Open the Packet tab and pick a task.</li><li>Tap Get Code, then watch 3 ads to unlock the code.</li><li>Copy the code and paste it in Binance Red Packet.</li><li>Invite friends to earn points and unlock codes without ads.</li><li>New codes are added regularly, so check back often.</li></ul></div>'+
+   '<button class="btn b-gold" style="width:100%" id="goPacket">🧧 Packet</button>';
+  $('#howBtn').onclick=function(){hap('tap');openLink(CONFIG.youtubeLink)};
+  $('#goPacket').onclick=function(){go('packet')};
+
+  $('#v-packet').innerHTML='<h1 class="pt">Packets</h1><p class="sub">Pick a task and unlock its Red Packet code.</p>'+(tasks.length?tasks.map(function(t){
+    return '<div class="card task"><h3>'+esc(t.title)+'</h3><p>'+esc(t.desc)+'</p><div class="m"><span class="pill">Left: '+(t.limit-(t.used||0))+'</span><button class="btn b-gold" data-code="'+t.id+'">Get Code</button></div></div>'}).join(''):'<div class="empty">🧧<br>No packets available right now.<br>Please check back later.</div>');
+  [].forEach.call(document.querySelectorAll('[data-code]'),function(b){b.onclick=function(){openCode(b.dataset.code)}});
+
+  var link=CONFIG.botLink+'?startapp='+S.uid;
+  $('#v-invite').innerHTML='<h1 class="pt" id="invTitle">Invite Friends</h1><p class="sub">Each friend you invite gives you <b>'+CONFIG.refPoints+' points</b>. '+CONFIG.unlockCost+' point unlocks 1 code with no ads.</p>'+
+   '<div class="grid3"><div class="st"><b>'+(u.invited||0)+'</b><span>Invited</span></div><div class="st"><b>'+(u.points||0)+'</b><span>Points</span></div><div class="st"><b>'+Math.floor((u.points||0)/CONFIG.unlockCost)+'</b><span>Free unlocks</span></div></div>'+
+   '<div class="card"><b>Your invite link</b><div class="link">'+esc(link)+'</div><div class="btns" style="max-width:none"><button class="btn b-gold" id="shareBtn">Invite Friends</button><button class="btn b-dark" id="cpLink">Copy Link</button></div></div>';
+  $('#shareBtn').onclick=function(){openLink('https://t.me/share/url?url='+encodeURIComponent(link)+'&text='+encodeURIComponent('Get Binance Red Packet codes here!'))};
+  $('#cpLink').onclick=function(){copy(link)};
+  var taps=0,lt=0;
+  $('#invTitle').onclick=function(){var n=Date.now();taps=(n-lt<450)?taps+1:1;lt=n;if(taps>=2){taps=0;$('#pwIn').value='';$('#pwModal').hidden=false;setTimeout(function(){$('#pwIn').focus()},50)}};
+}
+function go(v){
+  if(S.cd){clearInterval(S.cd);S.cd=null}
+  $('#codeView').hidden=true;S.view=v;
+  ['home','packet','invite'].forEach(function(x){$('#v-'+x).hidden=x!==v});
+  [].forEach.call(document.querySelectorAll('#nav button'),function(b){b.classList.toggle('on',b.dataset.go===v)});
+  window.scrollTo(0,0);
+}
+
+/* Code unlock */
+function openCode(id){
+  var t=S.tasks[id];if(!t)return;
+  var got=[false,false,false],cv=$('#codeView');cv.hidden=false;
+  function draw(){
+    var pts=S.user.points||0;
+    cv.innerHTML='<div class="in"><button class="btn b-dark" id="cvBack" style="margin-bottom:14px">← Back</button>'+
+     '<div class="card task"><h3>'+esc(t.title)+'</h3><p>'+esc(t.desc)+'</p></div>'+
+     '<div class="card"><b>Watch 3 ads</b><p class="sub" style="margin:4px 0 12px">Watch all 3 ads to unlock the code.</p>'+
+     ADS.map(function(a,i){return '<div class="adrow"><button class="btn '+(got[i]?'b-ok':'b-gold')+'" data-ad="'+i+'" '+(got[i]||S.busy?'disabled':'')+'>'+(got[i]?'✓ '+a.n+' watched':'▶ '+a.n)+'</button></div>'}).join('')+'</div>'+
+     '<div class="or">— or —</div>'+
+     '<button class="btn b-dark" style="width:100%" id="ptUnlock" '+(pts<CONFIG.unlockCost||S.busy?'disabled':'')+'>Unlock with '+CONFIG.unlockCost+' point (you have '+pts+')</button></div>';
+    $('#cvBack').onclick=function(){go('packet')};
+    [].forEach.call(cv.querySelectorAll('[data-ad]'),function(b){b.onclick=function(){watch(+b.dataset.ad)}});
+    $('#ptUnlock').onclick=function(){finish(true)};
+  }
+  async function watch(i){
+    if(S.busy)return;S.busy=true;draw();
+    try{await ADS[i].run();got[i]=true;hap('success')}
+    catch(e){toast('Ad not completed. Please try again.',true)}
+    S.busy=false;draw();
+    if(got.every(Boolean))finish(false);
+  }
+  async function finish(viaPts){
+    if(S.busy&&viaPts)return;S.busy=true;
+    try{
+      if(viaPts){
+        var ok=await uref().child('points').transaction(function(p){return (p||0)>=CONFIG.unlockCost?p-CONFIG.unlockCost:undefined});
+        if(!ok.committed)throw new Error('Not enough points');
+      }
+      var tr=await db.ref('rp/tasks/'+id).transaction(function(x){if(!x||(x.used||0)>=x.limit)return;x.used=(x.used||0)+1;return x});
+      if(!tr.committed){if(viaPts)uref().child('points').transaction(function(p){return (p||0)+CONFIG.unlockCost});throw new Error('This task is finished')}
+      var code=(await db.ref('rp/codes/'+id).once('value')).val()||'';
+      var up={};up['done/'+id]=true;await uref().update(up);
+      uref().child('unlocked').transaction(function(n){return (n||0)+1});
+      var x=tr.snapshot.val();if(x&&x.used>=x.limit)db.ref('rp/tasks/'+id).remove();
+      showCode(t,code);
+    }catch(e){toast(e.message||'Failed',true);S.busy=false;draw();return}
+    S.busy=false;
+  }
+  draw();
+}
+function showCode(t,code){
+  var cv=$('#codeView'),left=CONFIG.codeOpenSec;
+  cv.innerHTML='<div class="in"><div class="card task"><h3>🎉 Code Unlocked</h3><p>'+esc(t.title)+'</p></div>'+
+   '<div class="codebox">'+esc(code)+'</div><div class="cd" id="cdTxt"></div>'+
+   '<div class="btns" style="max-width:none"><button class="btn b-gold" id="cvCopy">Copy</button><button class="btn b-dark" id="cvBack2">← Back</button></div></div>';
+  $('#cvCopy').onclick=function(){copy(code)};
+  $('#cvBack2').onclick=function(){go('home')};
+  function tick(){$('#cdTxt').textContent='Going to Home in '+left+'s';if(left--<=0)go('home')}
+  tick();S.cd=setInterval(tick,1000);
+}
+
+/* Admin */
+$('#pwNo').onclick=function(){$('#pwModal').hidden=true};
+$('#pwOk').onclick=function(){
+  if($('#pwIn').value.trim()===CONFIG.adminPassword){$('#pwModal').hidden=true;['aTitle','aDesc','aCode','aQty'].forEach(function(i){$('#'+i).value=''});$('#admModal').hidden=false}
+  else toast('Wrong password',true);
+};
+$('#aClose').onclick=function(){$('#admModal').hidden=true};
+$('#aPub').onclick=async function(){
+  var title=$('#aTitle').value.trim(),desc=$('#aDesc').value.trim(),code=$('#aCode').value.trim(),qty=parseInt($('#aQty').value,10);
+  if(!title||!code||!(qty>0))return toast('Fill title, code and quantity',true);
+  var b=$('#aPub');b.disabled=true;
+  try{
+    var ref=db.ref('rp/tasks').push();
+    await db.ref('rp/codes/'+ref.key).set(code);
+    await ref.set({title:title,desc:desc,limit:qty,used:0,createdAt:TS});
+    $('#admModal').hidden=true;toast('Published!');
+  }catch(e){toast('Publish failed',true)}
+  b.disabled=false;
+};
+
+/* Boot */
+function startApp(tu){
+  $('#gate').hidden=true;$('#app').hidden=false;$('#nav').hidden=false;
+  $('#tLogo').innerHTML=LOGO;
+  [].forEach.call(document.querySelectorAll('#nav button'),function(b){b.onclick=function(){hap('tap');go(b.dataset.go)}});
+  render();go('home');
+  ensureUser(tu).catch(function(e){console.warn(e)});
+  uref().on('value',function(s){S.user=s.val()||{};render()});
+  db.ref('rp/tasks').on('value',function(s){S.tasks=s.val()||{};render()});
+}
+async function boot(){
+  $('#sLogo').innerHTML=LOGO;$('#gLogo').innerHTML=LOGO.replace('<svg','<svg style="width:72px;height:72px"');
+  try{tg&&(tg.ready(),tg.expand())}catch(e){}
+  var t0=Date.now();
+  var tu=(tg&&tg.initDataUnsafe&&tg.initDataUnsafe.user)||(PREVIEW?{id:'preview',first_name:'Preview'}:null);
+  if(tu)S.uid=String(tu.id);
+  var joined=tu?(PREVIEW?true:await Promise.race([verify(false),sleep(4000).then(function(){return null})])):false;
+  await sleep(Math.max(0,2200-(Date.now()-t0)));
+  var sp=$('#splash');sp.classList.add('leave');setTimeout(function(){sp.hidden=true},420);
+  if(!tu){$('#nogate').hidden=false;return}
+  if(joined===true)return startApp(tu);
+  $('#gate').hidden=false;
+  if(joined===null)$('#gHint').textContent='Could not verify right now. Join and tap Verify.';
+  $('#gJoin').onclick=function(){hap('tap');openLink(CONFIG.channelLink)};
+  $('#gVerify').onclick=async function(){
+    var b=$('#gVerify');b.disabled=true;b.innerHTML='<span class="sp"></span> Verifying';
+    var r=await verify(true);
+    if(r===true){toast('Verified!');startApp(tu);return}
+    b.disabled=false;b.textContent='Verify';
+    $('#gHint').textContent='Please join the channel first, then tap Verify.';
+    toast('You have not joined yet',true);
+  };
+}
+boot();
+})();
 </script>
 </body>
 </html>
